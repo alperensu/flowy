@@ -14,7 +14,7 @@ export default function Navbar() {
 
     return (
         <>
-            <div className="h-20 flex items-center justify-between px-8 sticky top-0 z-40 bg-gradient-to-b from-black/80 to-transparent backdrop-blur-lg">
+            <div className="h-20 flex items-center justify-between px-8 sticky top-0 z-40 bg-transparent backdrop-blur-xl border-b border-white/5">
                 <div className="flex items-center gap-4">
                     <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden text-gray-300 hover:text-white mr-2">
                         <Menu size={24} />

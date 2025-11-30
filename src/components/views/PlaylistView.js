@@ -5,9 +5,11 @@ import { useNavigation } from '@/context/NavigationContext';
 import { getPlaylists, getLikedSongs, deletePlaylist } from '@/lib/store';
 import { Play, Clock, Calendar, MoreHorizontal, ArrowDownCircle, UserPlus, Search, List, Heart, Pause, ArrowUp, ArrowDown } from 'lucide-react';
 import Image from 'next/image';
+import CoverImage from '@/components/CoverImage';
 import { usePlayer } from '@/context/PlayerContext';
 
 import { useContextMenu } from '@/context/ContextMenuContext';
+import { useAdaptiveTheme } from '@/hooks/useAdaptiveTheme';
 import { useDominantColor } from '@/hooks/useDominantColor';
 import { musicService } from '@/services/music/MusicService';
 import TrackRow from '@/components/TrackRow';
@@ -55,10 +57,37 @@ export default function PlaylistView() {
                     console.error("Album fetch error", e);
                 }
             } else {
+                // Regular playlist loading
                 setIsLikedSongs(false);
                 const playlists = getPlaylists();
                 const found = playlists.find(p => p.id === viewParams.id);
-                if (found) setPlaylist({ ...found, type: 'playlist' });
+
+                if (found) {
+                    // 🧬 UNIVERSAL MAPPER: Handle all possible data structures
+                    const rawTracks = found?.tracks?.data || found?.tracks?.items || found?.tracks || [];
+
+                    // Normalize tracks to a consistent structure
+                    const tracks = rawTracks.map(item => {
+                        // Some APIs nest the track object inside 'track' key
+                        const trackData = item.track || item;
+
+                        return {
+                            id: trackData.id,
+                            title: trackData.title || trackData.name || "Unknown Title",
+                            artist: trackData.artist?.name || trackData.artists?.[0]?.name || (typeof trackData.artist === 'string' ? trackData.artist : "Unknown Artist"),
+                            album: {
+                                title: trackData.album?.title || trackData.album?.name || "Single",
+                                cover_medium: trackData.album?.cover_medium || trackData.album?.images?.[0]?.url || trackData.cover_medium || null,
+                                cover_small: trackData.album?.cover_small || trackData.cover_small || null
+                            },
+                            image: trackData.image || trackData.album?.cover_medium || trackData.album?.images?.[0]?.url || trackData.thumbnail || trackData.cover_medium || "/placeholder-album.jpg",
+                            duration: trackData.duration || 0,
+                            preview: trackData.preview || null
+                        };
+                    });
+
+                    setPlaylist({ ...found, tracks, type: 'playlist' });
+                }
             }
         };
 
@@ -130,6 +159,10 @@ export default function PlaylistView() {
 
     const dominantColor = useDominantColor(activeCoverUrl, '#1e1e1e');
 
+    // Dynamic Theme Integration (must be before early return)
+    const { activeTheme } = useAdaptiveTheme(activeCoverUrl);
+    const themeColor = activeTheme?.accent || dominantColor || '#1e1e1e';
+
     if (!playlist) return <div className="p-8 text-white">Loading...</div>;
 
     const totalDuration = playlist.tracks.reduce((acc, track) => acc + (track.duration || 0), 0);
@@ -153,126 +186,104 @@ export default function PlaylistView() {
 
     const ListHeader = (
         <>
-            {/* Header */}
-            <div className="p-8 flex items-end gap-6 bg-gradient-to-b from-black/20 to-transparent backdrop-blur-sm animate-fade-in-up">
-                <div className="w-60 h-60 shadow-2xl shadow-black/50 rounded-lg overflow-hidden relative bg-[#282828] flex items-center justify-center group animate-fade-in-up stagger-1">
-                    {isLikedSongs ? (
-                        <div className="w-full h-full flex items-center justify-center relative">
-                            {/* Dynamic Liked Songs Cover */}
-                            {playlist.tracks.length > 0 ? (
-                                <>
-                                    <Image
-                                        src={playlist.tracks[0].album?.cover_xl || playlist.tracks[0].cover_xl}
-                                        alt=""
-                                        fill
-                                        className="object-cover opacity-80 blur-sm scale-110"
-                                    />
-                                    <div className="absolute inset-0 bg-black/20" />
-                                    <Heart size={80} className="text-white relative z-10 drop-shadow-lg" fill="white" />
-                                </>
-                            ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-[#bc13fe] to-[#00f3ff] flex items-center justify-center">
-                                    <Heart size={80} className="text-white" fill="white" />
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        playlist.tracks.length > 0 ? (
-                            <div className="grid grid-cols-2 w-full h-full">
-                                {playlist.tracks.slice(0, 4).map((track, i) => (
-                                    <div key={i} className="relative w-full h-full">
-                                        <Image
-                                            src={track.album?.cover_medium || track.cover_medium || "/placeholder-album.jpg"}
-                                            alt=""
-                                            fill
-                                            className="object-cover"
-                                        />
-                                    </div>
-                                ))}
+            {/* 🎨 Immersive Background Layer - Fixed*/}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                {activeCoverUrl && (
+                    <CoverImage
+                        src={activeCoverUrl}
+                        alt=""
+                        fill
+                        className="object-cover opacity-40 blur-[100px] scale-110"
+                    />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/50 to-[#09090b]" />
+            </div>
+
+            {/* Content Layer */}
+            <div className="relative z-10">
+                {/* Hero Header */}
+                <div className="p-8 pt-24 flex flex-col md:flex-row items-end gap-8 animate-fade-in-up">
+                    {/* Cover Art */}
+                    <div className="w-52 h-52 md:w-64 md:h-64 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden relative group shrink-0">
+                        {isLikedSongs ? (
+                            <div className="w-full h-full bg-gradient-to-br from-[#450af5] to-[#c4efd9] flex items-center justify-center">
+                                <Heart size={80} className="text-white drop-shadow-lg" fill="white" />
                             </div>
                         ) : (
-                            <span className="text-6xl font-bold text-gray-600">{playlist.name[0]}</span>
-                        )
-                    )}
-                </div>
-                <div className="flex flex-col gap-2 animate-fade-in-up stagger-2">
-                    <span className="text-sm font-bold uppercase tracking-wider">
-                        {isLikedSongs ? t.sidebar.playlist : (playlist.type === 'album' ? 'Album' : 'Public Playlist')}
-                    </span>
-                    <h1 className="text-5xl md:text-7xl font-black tracking-tight line-clamp-2">{playlist.name}</h1>
-                    <div className="flex items-center gap-2 text-sm font-medium text-gray-300 mt-4">
-                        {playlist.type === 'album' ? (
-                            <>
-                                <div className="w-6 h-6 rounded-full relative overflow-hidden">
-                                    <Image src={playlist.artist?.image || "/placeholder-artist.jpg"} alt="" fill className="object-cover" />
-                                </div>
-                                <span className="text-white hover:underline cursor-pointer font-bold">{playlist.artist?.name || "Unknown Artist"}</span>
-                                <span>•</span>
-                                <span>{playlist.releaseDate?.split('-')[0] || "2024"}</span>
-                            </>
-                        ) : (
-                            <>
-                                <div className="w-6 h-6 rounded-full bg-gray-500 flex items-center justify-center overflow-hidden">
-                                    <span className="text-xs">U</span>
-                                </div>
-                                <span className="text-white hover:underline cursor-pointer">Flowy User</span>
-                            </>
+                            <CoverImage
+                                src={playlist.cover_xl || playlist.cover_medium || playlist.image || playlist.tracks?.[0]?.image || "/placeholder-album.jpg"}
+                                alt={playlist.name}
+                                fill
+                                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                            />
                         )}
-                        <span>•</span>
-                        <span>{playlist.tracks.length} {t.sidebar.songs},</span>
-                        <span className="text-gray-400">{formatTotalDuration(totalDuration)}</span>
+                        <div className="absolute inset-0 ring-1 ring-white/10 rounded-2xl" />
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex flex-col gap-4 flex-1 min-w-0">
+                        <span className="text-xs font-bold uppercase tracking-widest text-white/80">
+                            {isLikedSongs ? t.sidebar.playlist : (playlist.type === 'album' ? 'Album' : 'Public Playlist')}
+                        </span>
+                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight text-white drop-shadow-lg line-clamp-2">
+                            {playlist.name}
+                        </h1>
+                        <div className="flex items-center flex-wrap gap-2 text-sm font-medium text-white/80 mt-2">
+                            {playlist.artist && (
+                                <>
+                                    <div className="w-6 h-6 rounded-full relative overflow-hidden ring-1 ring-white/20">
+                                        <CoverImage src={playlist.artist.image || "/placeholder-artist.jpg"} alt="" fill className="object-cover" />
+                                    </div>
+                                    <span className="hover:underline cursor-pointer font-bold text-white">{playlist.artist.name}</span>
+                                    <span>•</span>
+                                </>
+                            )}
+                            <span className="text-white/60">{playlist.releaseDate?.split('-')[0] || "2024"}</span>
+                            <span>•</span>
+                            <span className="text-white">{playlist.tracks.length} {t.sidebar.songs},</span>
+                            <span className="text-white/60">{formatTotalDuration(totalDuration)}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Action Bar */}
-            <div className="px-8 py-6 flex items-center justify-between bg-black/20 backdrop-blur-sm sticky top-0 z-10">
-                <div className="flex items-center gap-6">
-                    <button
-                        onClick={() => playlist.tracks.length > 0 && playTrack(playlist.tracks[0], playlist.tracks, playlist.id)}
-                        className="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center hover:scale-105 transition shadow-lg hover:bg-green-400"
-                    >
-                        {isPlaying && currentTrack?.id === playlist.tracks[0]?.id && currentContextId === playlist.id ? <Pause size={28} fill="black" /> : <Play size={28} fill="black" className="ml-1" />}
-                    </button>
-                    <button className="text-gray-400 hover:text-white transition"><ArrowDownCircle size={32} /></button>
-                    <button className="text-gray-400 hover:text-white transition"><UserPlus size={24} /></button>
-                    <button className="text-gray-400 hover:text-white transition"><MoreHorizontal size={32} /></button>
-                </div>
-                <div className="flex items-center gap-4">
-                    <button className="text-gray-400 hover:text-white transition"><Search size={20} /></button>
-                    <div className="flex items-center gap-2 text-gray-400 hover:text-white cursor-pointer text-sm font-medium">
-                        <span>Custom Order</span>
-                        <List size={16} />
+                {/* Action Bar */}
+                <div className="px-8 py-6 flex items-center justify-between sticky top-0 z-20 backdrop-blur-xl bg-white/5 border-b border-white/5">
+                    <div className="flex items-center gap-6">
+                        <button
+                            onClick={() => playlist.tracks.length > 0 && playTrack(playlist.tracks[0], playlist.tracks, playlist.id)}
+                            className="w-14 h-14 rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition shadow-[0_0_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                            style={{ backgroundColor: themeColor, color: '#000' }}
+                        >
+                            {isPlaying && currentTrack?.id === playlist.tracks[0]?.id && currentContextId === playlist.id ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" className="ml-1" />}
+                        </button>
+                        <button className="text-white/60 hover:text-white transition hover:scale-110"><ArrowDownCircle size={32} /></button>
+                        <button className="text-white/60 hover:text-white transition hover:scale-110"><UserPlus size={24} /></button>
+                        <button className="text-white/60 hover:text-white transition hover:scale-110"><MoreHorizontal size={32} /></button>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <button className="text-white/60 hover:text-white transition p-2 hover:bg-white/10 rounded-full"><Search size={20} /></button>
+                        <div className="flex items-center gap-2 text-white/60 hover:text-white cursor-pointer text-sm font-medium px-3 py-1.5 rounded-full hover:bg-white/10 transition">
+                            <span>Custom Order</span>
+                            <List size={16} />
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Table Header */}
-            <div className="px-8 pb-2 border-b border-white/10 text-gray-400 text-sm font-medium grid grid-cols-[16px_4fr_3fr_2fr_minmax(120px,1fr)] gap-4 items-center sticky top-[88px] bg-black/20 backdrop-blur-md z-10">
-                <span className="text-center">#</span>
-                <span
-                    className="cursor-pointer hover:text-white transition flex items-center"
-                    onClick={() => handleSort('title')}
-                >
-                    Title <SortIcon columnKey="title" />
-                </span>
-                <span
-                    className="cursor-pointer hover:text-white transition flex items-center"
-                    onClick={() => handleSort('album')}
-                >
-                    Album <SortIcon columnKey="album" />
-                </span>
-                <span
-                    className="cursor-pointer hover:text-white transition flex items-center"
-                    onClick={() => handleSort('dateAdded')}
-                >
-                    Date Added <SortIcon columnKey="dateAdded" />
-                </span>
-                <div
-                    className="flex justify-end pr-8 cursor-pointer hover:text-white transition items-center"
-                    onClick={() => handleSort('duration')}
-                >
-                    <Clock size={16} /> <SortIcon columnKey="duration" />
+                {/* 🧊 Glass Table Header */}
+                <div className="px-8 py-3 border-b border-white/5 text-white/50 text-xs font-bold uppercase tracking-wider grid grid-cols-[16px_4fr_3fr_2fr_minmax(120px,1fr)] gap-4 items-center sticky top-[88px] z-20 backdrop-blur-md bg-white/5">
+                    <span className="text-center">#</span>
+                    <span className="cursor-pointer hover:text-white transition flex items-center gap-1" onClick={() => handleSort('title')}>
+                        Title <SortIcon columnKey="title" />
+                    </span>
+                    <span className="cursor-pointer hover:text-white transition flex items-center gap-1" onClick={() => handleSort('album')}>
+                        Album <SortIcon columnKey="album" />
+                    </span>
+                    <span className="cursor-pointer hover:text-white transition flex items-center gap-1" onClick={() => handleSort('dateAdded')}>
+                        Date Added <SortIcon columnKey="dateAdded" />
+                    </span>
+                    <div className="flex justify-end pr-8 cursor-pointer hover:text-white transition items-center gap-1" onClick={() => handleSort('duration')}>
+                        <Clock size={16} /> <SortIcon columnKey="duration" />
+                    </div>
                 </div>
             </div>
         </>

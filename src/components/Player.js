@@ -18,8 +18,6 @@ import YouTubePlayer from './YouTubePlayer';
 const LyricsModal = dynamic(() => import('./LyricsModal'), { ssr: false });
 const MobilePlayer = dynamic(() => import('./MobilePlayer'), { ssr: false });
 
-import { getDominantColor } from '@/utils/colorUtils';
-
 export default function Player() {
     const {
         currentTrack, isPlaying, setIsPlaying, togglePlay, repeatMode, toggleRepeat,
@@ -43,7 +41,7 @@ export default function Player() {
     const [isLoadingYoutube, setIsLoadingYoutube] = useState(true);
     const [isReady, setIsReady] = useState(false);
     const [uiTime, setUiTime] = useState(0);
-    const [accentColor, setAccentColor] = useState('rgba(0, 243, 255, 0.6)'); // Default Cyan
+
 
     // Playlist State
     const [showPlaylistMenu, setShowPlaylistMenu] = useState(false);
@@ -74,15 +72,6 @@ export default function Player() {
             window.removeEventListener('keydown', initAudio);
         };
     }, []);
-
-    // Extract Dominant Color
-    useEffect(() => {
-        if (currentTrack?.album?.cover_small) {
-            getDominantColor(currentTrack.album.cover_small).then(color => {
-                if (color) setAccentColor(color);
-            });
-        }
-    }, [currentTrack]);
 
     const handleSeekChange = (e) => {
         const newTime = parseFloat(e.target.value);
@@ -254,11 +243,6 @@ export default function Player() {
         return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     };
 
-    // if (!currentTrack) return null; // REMOVED: Allow rendering without track for initial state
-
-    // Determine positioning based on hasPlayedOnce
-    const { hasPlayedOnce } = usePlayer();
-
     // Placeholder data for initial state
     const displayTrack = currentTrack || {
         title: t.player?.welcome?.title || "Welcome to Flowy",
@@ -266,23 +250,32 @@ export default function Player() {
         album: { cover_small: null }
     };
 
+    // Determine active cover art
+    const activeCover = currentTrack?.image || currentTrack?.cover_medium || currentTrack?.album?.cover_medium || currentTrack?.thumbnail || null;
+
     return (
         <>
             <motion.div
-                drag="y"
+                drag
                 dragMomentum={false}
-                dragElastic={0.1}
-                dragConstraints={{ top: -window.innerHeight + 100, bottom: 0 }}
-                animate={hasPlayedOnce ? controls : { y: 0 }} // Only animate Y
-                initial={false}
+                dragElastic={0.2}
+                dragConstraints={{ left: -window.innerWidth / 2, right: window.innerWidth / 2, top: -window.innerHeight + 100, bottom: 50 }}
+                animate={controls}
+                initial={{ x: 0, y: 0 }}
+                onDragStart={() => document.body.style.cursor = 'grabbing'}
                 onDragEnd={(event, info) => {
-                    // Snap to bottom if dropped within the bottom 30% of the screen
-                    const threshold = window.innerHeight * 0.7;
-                    if (info.point.y > threshold) {
-                        controls.start({ y: 0, transition: { type: "spring", stiffness: 300, damping: 30 } });
+                    document.body.style.cursor = 'default';
+
+                    // Calculate distance from center-bottom (default position)
+                    const { x, y } = info.offset;
+                    const distance = Math.sqrt(x * x + y * y);
+
+                    // If within 200px of default, snap back
+                    if (distance < 200) {
+                        controls.start({ x: 0, y: 0, transition: { type: "spring", stiffness: 300, damping: 25 } });
                     }
                 }}
-                className={`fixed h-24 glass-panel px-6 flex items-center justify-between z-50 shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-white/10 backdrop-blur-xl cursor-grab active:cursor-grabbing will-change-transform`}
+                className={`fixed h-24 glass-panel px-6 flex items-center justify-between z-50 shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-white/10 backdrop-blur-2xl cursor-grab active:cursor-grabbing will-change-transform transition-colors duration-700`}
                 style={{
                     width: '90%',
                     maxWidth: '1400px',
@@ -291,28 +284,31 @@ export default function Player() {
                     margin: '0 auto',
                     borderRadius: '32px',
                     bottom: '24px',
-                    borderColor: `rgba(${accentColor.replace('rgb(', '').replace(')', '')}, 0.2)`,
-                    boxShadow: `0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(${accentColor.replace('rgb(', '').replace(')', '')}, 0.1)`
+                    borderColor: `rgba(255, 255, 255, 0.1)`,
+                    boxShadow: `0 10px 40px rgba(0,0,0,0.5), 0 0 40px -10px var(--dynamic-glow-primary)`
                 }}
             >
+                {/* Left: Track Info */}
                 <div className="flex items-center gap-3 w-full md:w-[30%]">
                     <div
                         className="relative h-14 w-14 md:h-16 md:w-16 shrink-0 group cursor-pointer"
                         onClick={(e) => { e.stopPropagation(); if (currentTrack) toggleFullScreenPlayer(); }}
                     >
-                        <Image
-                            src={
-                                displayTrack.cover_url ||
-                                displayTrack.cover_xl || displayTrack.cover_medium || displayTrack.cover_small ||
-                                displayTrack.album?.cover_xl || displayTrack.album?.cover_medium || displayTrack.album?.cover_small ||
-                                displayTrack.image ||
-                                "/placeholder-album.jpg"
-                            }
-                            alt="Cover"
-                            fill
-                            className="rounded-md object-cover shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all duration-300"
-                            sizes="80px"
-                        />
+                        {activeCover ? (
+                            <Image
+                                src={activeCover}
+                                alt="Cover"
+                                fill
+                                className="rounded-md object-cover shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all duration-300"
+                                sizes="80px"
+                            />
+                        ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center rounded-md">
+                                <div className="w-8 h-8 rounded-full border-2 border-white/20 flex items-center justify-center">
+                                    <div className="w-2 h-2 bg-white/50 rounded-full" />
+                                </div>
+                            </div>
+                        )}
                         <div className="absolute inset-0 rounded-md border border-white/10" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -324,7 +320,7 @@ export default function Player() {
                     {currentTrack && (
                         <div className="flex items-center gap-1 -translate-x-2 -translate-y-1">
                             {/* Like Button */}
-                            <button onClick={(e) => { e.stopPropagation(); handleLike(); }} className={`transition hover:scale-110 ${liked ? 'text-cyan-400 drop-shadow-[0_0_10px_rgba(0,243,255,0.8)]' : 'text-gray-400 hover:text-white'}`}>
+                            <button onClick={(e) => { e.stopPropagation(); handleLike(); }} className={`transition hover:scale-110 ${liked ? 'text-[var(--dynamic-accent)] drop-shadow-[0_0_10px_var(--dynamic-accent)]' : 'text-gray-400 hover:text-white'}`}>
                                 <Heart size={20} fill={liked ? "currentColor" : "none"} />
                             </button>
 
@@ -371,7 +367,7 @@ export default function Player() {
 
                 <div className="hidden md:flex flex-col items-center justify-center w-[40%]">
                     <div className="flex items-center gap-4 mb-2">
-                        <button onClick={(e) => { e.stopPropagation(); toggleShuffle(); }} disabled={!currentTrack} className={`transition hover:scale-110 ${isShuffled ? 'text-cyan-400 drop-shadow-[0_0_5px_rgba(0,243,255,0.5)]' : 'text-gray-400 hover:text-white'} ${!currentTrack && 'opacity-50 cursor-not-allowed'}`}>
+                        <button onClick={(e) => { e.stopPropagation(); toggleShuffle(); }} disabled={!currentTrack} className={`transition hover:scale-110 ${isShuffled ? 'text-[var(--dynamic-glow-primary)] drop-shadow-[0_0_5px_var(--dynamic-glow-primary)]' : 'text-gray-400 hover:text-white'} ${!currentTrack && 'opacity-50 cursor-not-allowed'}`}>
                             <Shuffle size={18} />
                         </button>
                         <button onClick={(e) => { e.stopPropagation(); prevTrack(); }} disabled={!currentTrack} className={`text-gray-400 hover:text-white transition hover:scale-110 glow-hover ${!currentTrack && 'opacity-50 cursor-not-allowed'}`}>
@@ -397,7 +393,7 @@ export default function Player() {
                         <button onClick={(e) => { e.stopPropagation(); nextTrack(); }} disabled={!currentTrack} className={`text-gray-400 hover:text-white transition hover:scale-110 glow-hover ${!currentTrack && 'opacity-50 cursor-not-allowed'}`}>
                             <SkipForward size={20} />
                         </button>
-                        <button onClick={(e) => { e.stopPropagation(); toggleRepeat(); }} disabled={!currentTrack} className={`transition hover:scale-110 ${repeatMode !== 'off' ? 'text-cyan-400 drop-shadow-[0_0_5px_rgba(0,243,255,0.5)]' : 'text-gray-400 hover:text-white'} ${!currentTrack && 'opacity-50 cursor-not-allowed'}`}>
+                        <button onClick={(e) => { e.stopPropagation(); toggleRepeat(); }} disabled={!currentTrack} className={`transition hover:scale-110 ${repeatMode !== 'off' ? 'text-[var(--dynamic-glow-primary)] drop-shadow-[0_0_5px_var(--dynamic-glow-primary)]' : 'text-gray-400 hover:text-white'} ${!currentTrack && 'opacity-50 cursor-not-allowed'}`}>
                             {repeatMode === 'one' ? <Repeat1 size={18} /> : <Repeat size={18} />}
                         </button>
                     </div>
@@ -412,9 +408,9 @@ export default function Player() {
                             onMouseUp={handleSeekEnd}
                             onTouchEnd={handleSeekEnd}
                             disabled={!currentTrack}
-                            className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer hover:h-1.5 transition-all [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(255,255,255,0.8)] disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer hover:h-1.5 transition-all [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(255,255,255,0.8)] disabled:opacity-50 disabled:cursor-not-allowed"
                             style={{
-                                background: `linear-gradient(to right, ${accentColor} ${(uiTime / (duration || 1)) * 100}%, rgba(255, 255, 255, 0.1) ${(uiTime / (duration || 1)) * 100}%)`
+                                background: `linear-gradient(to right, var(--dynamic-accent) ${(uiTime / (duration || 1)) * 100}%, rgba(255, 255, 255, 0.1) ${(uiTime / (duration || 1)) * 100}%)`
                             }}
                         />
                         <span className="text-xs text-gray-400 min-w-[40px]">{formatTime(duration)}</span>
@@ -425,7 +421,7 @@ export default function Player() {
                     <button className="text-gray-400 hover:text-white transition hover:scale-110" disabled={!currentTrack}>
                         <Mic2 size={20} />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); toggleQueue(); }} disabled={!currentTrack} className={`transition hover:scale-110 ${isQueueOpen ? 'text-cyan-400 drop-shadow-[0_0_5px_rgba(0,243,255,0.5)]' : 'text-gray-400 hover:text-white'} ${!currentTrack && 'opacity-50 cursor-not-allowed'}`}>
+                    <button onClick={(e) => { e.stopPropagation(); toggleQueue(); }} disabled={!currentTrack} className={`transition hover:scale-110 ${isQueueOpen ? 'text-[var(--dynamic-glow-primary)] drop-shadow-[0_0_5px_var(--dynamic-glow-primary)]' : 'text-gray-400 hover:text-white'} ${!currentTrack && 'opacity-50 cursor-not-allowed'}`}>
                         <ListMusic size={20} />
                     </button>
                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -437,9 +433,9 @@ export default function Player() {
                             step="0.01"
                             value={volume}
                             onChange={(e) => setVolume(parseFloat(e.target.value))}
-                            className="w-24 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer hover:h-1.5 transition-all [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full"
+                            className="w-24 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer hover:h-1.5 transition-all [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full"
                             style={{
-                                background: `linear-gradient(to right, ${accentColor} ${volume * 100}%, rgba(255, 255, 255, 0.1) ${volume * 100}%)`
+                                background: `linear-gradient(to right, var(--dynamic-accent) ${volume * 100}%, rgba(255, 255, 255, 0.1) ${volume * 100}%)`
                             }}
                         />
                     </div>
@@ -476,7 +472,7 @@ export default function Player() {
                         />
                     )}
                 </div>
-            </motion.div>
+            </motion.div >
             <LyricsModal isOpen={isLyricsOpen} onClose={() => setIsLyricsOpen(false)} />
             <MobilePlayer isOpen={isMobilePlayerOpen} onClose={() => setIsMobilePlayerOpen(false)} />
         </>

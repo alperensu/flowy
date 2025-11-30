@@ -159,10 +159,9 @@ export default function ContextMenu() {
 
     return (
         <div
-            className="fixed z-[100] bg-[#282828] border border-white/10 rounded-xl shadow-2xl w-64 py-2 animate-in fade-in zoom-in-95 duration-200 backdrop-blur-md"
+            className="fixed z-[99999] bg-[#282828] border border-white/10 rounded-xl shadow-2xl w-64 py-2 animate-in fade-in zoom-in-95 duration-200 backdrop-blur-md"
             style={style}
             onClick={(e) => e.stopPropagation()}
-            onMouseLeave={closeMenu}
         >
             {/* TRACK MENU */}
             {type === 'track' && (

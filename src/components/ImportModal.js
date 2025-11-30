@@ -123,6 +123,7 @@ export default function ImportModal({ isOpen, onClose }) {
                         >
                             <LinkIcon size={16} />
                             Spotify Import
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500 text-white ml-1">BETA</span>
                         </button>
                         <button
                             onClick={() => setMode('text')}
@@ -168,11 +169,11 @@ export default function ImportModal({ isOpen, onClose }) {
                                 </div>
                             </div>
 
-                            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 flex gap-3 items-start">
-                                <CheckCircle2 size={18} className="text-green-500 shrink-0 mt-0.5" />
+                            <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 flex gap-3 items-start">
+                                <AlertCircle size={18} className="text-orange-500 shrink-0 mt-0.5" />
                                 <div className="text-xs text-gray-300">
-                                    <p className="font-bold text-green-400 mb-1">Pro Tip</p>
-                                    <p>Make sure the playlist is <strong>Public</strong>. Private playlists cannot be imported without login.</p>
+                                    <p className="font-bold text-orange-400 mb-1">Beta Feature</p>
+                                    <p>Spotify import is currently in beta and may not work for all playlists. For best results, use the <strong>Text Import</strong> feature instead.</p>
                                 </div>
                             </div>
                         </div>

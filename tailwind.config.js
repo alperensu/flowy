@@ -10,6 +10,9 @@ module.exports = {
             colors: {
                 background: "var(--background)",
                 foreground: "var(--foreground)",
+                "dynamic-base": "var(--dynamic-bg-base)",
+                "dynamic-glow": "var(--dynamic-glow-primary)",
+                "dynamic-accent": "var(--dynamic-accent)",
             },
         },
     },

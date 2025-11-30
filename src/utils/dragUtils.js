@@ -47,8 +47,8 @@ export const initDrag = (e, type, item) => {
     ghostElement.style.pointerEvents = 'none';
     ghostElement.style.zIndex = '9999';
     ghostElement.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0)`;
-    // Force hardware acceleration and prevent lag
-    ghostElement.style.transition = 'none';
+    // Smooth cursor following with minimal delay
+    ghostElement.style.transition = 'transform 75ms cubic-bezier(0.2, 0.8, 0.2, 1)';
     ghostElement.style.willChange = 'transform';
 
     // Visual Styles (Glassmorphism + Neon Glow)

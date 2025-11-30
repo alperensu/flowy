@@ -250,7 +250,40 @@ export default function SettingsModal({ isOpen, onClose }) {
                                         control={<Toggle checked={settings.lowPerformanceMode} onChange={(v) => updateSetting('lowPerformanceMode', v)} />}
                                     />
 
-                                    <div className="mt-8 pt-8 border-t border-white/10 flex justify-center">
+                                    <div className="mt-8 pt-8 border-t border-white/10 flex flex-col gap-4">
+                                        <button
+                                            onClick={async () => {
+                                                const confirmed = await showModal('CONFIRM', {
+                                                    title: "Yerel Verileri Temizle",
+                                                    message: "Tüm playlist'ler, beğenilen şarkılar, geçmiş ve önbellek temizlenecek. Bu işlem geri alınamaz!",
+                                                    confirmText: "Temizle",
+                                                    isDestructive: true
+                                                });
+
+                                                if (confirmed) {
+                                                    // Close the settings modal
+                                                    onClose();
+
+                                                    // Clear all localStorage data
+                                                    localStorage.clear();
+
+                                                    // Optionally clear sessionStorage too
+                                                    sessionStorage.clear();
+
+                                                    addToast("Tüm yerel veriler temizlendi. Sayfa yenileniyor...", "success");
+
+                                                    // Reload the page after a short delay
+                                                    setTimeout(() => {
+                                                        window.location.reload();
+                                                    }, 1500);
+                                                }
+                                            }}
+                                            className="text-orange-400 hover:text-orange-300 text-sm font-bold hover:underline flex items-center justify-center gap-2 py-2"
+                                        >
+                                            <HardDrive size={16} />
+                                            Yerel Verileri ve Önbelleği Temizle
+                                        </button>
+
                                         <button
                                             onClick={async () => {
                                                 const confirmed = await showModal('CONFIRM', {
@@ -264,7 +297,7 @@ export default function SettingsModal({ isOpen, onClose }) {
                                                     resetSettings();
                                                 }
                                             }}
-                                            className="text-red-400 hover:text-red-300 text-sm font-bold hover:underline flex items-center gap-2"
+                                            className="text-red-400 hover:text-red-300 text-sm font-bold hover:underline flex items-center justify-center gap-2 py-2"
                                         >
                                             {t.settings.reset || "Varsayılanlara Dön"}
                                         </button>
@@ -276,7 +309,7 @@ export default function SettingsModal({ isOpen, onClose }) {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 
     return createPortal(modalContent, document.body);

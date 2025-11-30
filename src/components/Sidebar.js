@@ -127,12 +127,13 @@ export default function Sidebar() {
                 ref={sidebarRef}
                 className={clsx(
                     "h-full flex flex-col gap-3 p-3 relative group z-20 transition-all duration-300",
-                    "fixed inset-y-0 left-0 bg-black/95 lg:static lg:bg-transparent",
+                    "fixed inset-y-0 left-0 bg-black/40 backdrop-blur-xl lg:static lg:bg-transparent",
                     isMobileMenuOpen ? "translate-x-0 w-[280px]" : "-translate-x-full lg:translate-x-0"
                 )}
                 style={{
                     width: (mounted && window.innerWidth >= 1024) ? (isCollapsed ? '88px' : `${width}px`) : undefined,
-                    transition: isResizing ? 'none' : 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease'
+                    transition: isResizing ? 'none' : 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease',
+                    borderRight: '1px solid rgba(255, 255, 255, 0.05)'
                 }}
             >
                 {/* Mobile Close Button */}

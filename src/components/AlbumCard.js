@@ -48,15 +48,18 @@ export default function AlbumCard({ item, context = [] }) {
 
     return (
         <div
-            className="glass p-4 rounded-xl hover-lift hover-glow-cyan group relative border border-transparent hover:border-cyan-500/30"
+            className="glass p-4 rounded-xl hover-lift group relative border border-transparent hover:border-[var(--dynamic-glow-primary)]/30 transition-all duration-300"
             onContextMenu={handleContextMenu}
             draggable
             onDragStart={handleDragStart}
+            style={{
+                '--glow-color': 'var(--dynamic-glow-primary)'
+            }}
         >
 
             <div
                 onClick={handlePlay}
-                className="relative mb-4 cursor-pointer aspect-square w-full overflow-hidden rounded-lg"
+                className="relative mb-4 cursor-pointer aspect-square w-full overflow-hidden rounded-lg shadow-lg group-hover:shadow-[0_0_20px_var(--dynamic-glow-primary)] transition-all duration-500"
             >
                 <Image
                     src={
@@ -68,19 +71,19 @@ export default function AlbumCard({ item, context = [] }) {
                     }
                     alt={item.title}
                     fill
-                    className="object-cover transition duration-500 group-hover:scale-110 group-hover:rotate-1"
+                    className="object-cover transition duration-700 group-hover:scale-110 group-hover:rotate-1"
                     sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
                 />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center backdrop-blur-[2px]">
                     <button
-                        className="w-14 h-14 bg-cyan-400 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(0,243,255,0.8)] hover:scale-110 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0"
+                        className="w-14 h-14 bg-[var(--dynamic-accent)] rounded-full flex items-center justify-center shadow-[0_0_15px_var(--dynamic-accent)] hover:scale-110 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0"
                         aria-label={`Play ${item.title}`}
                     >
                         <Play size={28} fill="black" className="text-black ml-1" />
                     </button>
                 </div>
             </div>
-            <h3 className="text-white font-bold truncate mb-1 cursor-pointer hover:text-cyan-400 transition" onClick={handlePlay}>{item.title}</h3>
+            <h3 className="text-white font-bold truncate mb-1 cursor-pointer hover:text-[var(--dynamic-accent)] transition" onClick={handlePlay}>{item.title}</h3>
             <div
                 className="text-gray-400 text-sm truncate hover:text-white hover:underline block cursor-pointer"
                 onClick={(e) => {

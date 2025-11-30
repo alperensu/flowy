@@ -16,29 +16,37 @@
   --background-start-rgb: 5, 5, 5;
   --background-end-rgb: 10, 10, 10;
 
-  --color-primary: #00f3ff;
-  /* Neon Cyan */
+  /* Dynamic Adaptive Theme Defaults */
+  --dynamic-bg-base: #050505;
+  --dynamic-glow-primary: #00f3ff;
+  --dynamic-glow-rgb: 0 243 255;
+  --dynamic-accent: #0aff60;
+
+  /* Legacy Mappings (to keep existing code working) */
+  --color-primary: var(--dynamic-glow-primary);
   --color-secondary: #bc13fe;
-  /* Neon Purple */
-  --color-accent: #0aff60;
-  /* Neon Green */
-  --color-background: #050505;
+  --color-accent: var(--dynamic-accent);
+  --color-background: var(--dynamic-bg-base);
   --color-surface: rgba(255, 255, 255, 0.03);
   --color-text-primary: #ffffff;
   --color-text-secondary: #a0a0a0;
 
-  --neon-cyan: #00f3ff;
+  --neon-cyan: var(--dynamic-glow-primary);
   --neon-purple: #bc13fe;
-  --neon-green: #0aff60;
+  --neon-green: var(--dynamic-accent);
 }
 
 body {
   color: var(--color-text-primary);
-  background: var(--color-background);
+  background: var(--dynamic-bg-base);
+  /* Use dynamic base */
   user-select: none;
   -webkit-user-select: none;
   overflow: hidden;
-  transition: background-color 0.3s ease, color 0.3s ease;
+
+  /* Smooth Color Transitions */
+  transition: background-color 1s ease, color 0.3s ease;
+
   /* GPU acceleration trigger */
   transform: translateZ(0);
   -webkit-transform: translateZ(0);

@@ -11,7 +11,7 @@ export default function DragGhost() {
 
     return (
         <div
-            className="fixed pointer-events-none z-[9999] top-0 left-0"
+            className="fixed pointer-events-none z-[9999] top-0 left-0 transition-transform duration-75 ease-out will-change-transform"
             style={{
                 transform: `translate(${mousePosition.x}px, ${mousePosition.y}px)`,
                 // Offset to not cover the cursor exactly, slightly below-right

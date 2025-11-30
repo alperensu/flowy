@@ -4,8 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Play, Pause, Heart, Clock, Disc, Mic2, User, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
+import CoverImage from '@/components/CoverImage';
 import { usePlayer } from '@/context/PlayerContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { normalizeTrackData } from '@/lib/trackUtils';
 
 export default function SearchView() {
     const [query, setQuery] = useState('');
@@ -46,20 +48,12 @@ export default function SearchView() {
 
     const handlePlay = (track) => {
         // Convert search result format to player format if needed
-        const playerTrack = {
-            id: track.id,
-            title: track.title,
-            artist: track.artist,
-            duration: track.duration,
-            cover_medium: track.thumbnail,
-            cover_xl: track.thumbnail, // Use thumbnail for all sizes for now
-            image: track.thumbnail
-        };
+        const playerTrack = normalizeTrackData(track);
         playTrack(playerTrack);
     };
 
     return (
-        <div className="min-h-screen w-full bg-[#0a0a0a] text-white p-6 pb-32 overflow-y-auto custom-scrollbar">
+        <div className="min-h-screen w-full bg-transparent text-white p-6 pb-32 overflow-y-auto custom-scrollbar">
 
             {/* Hero Search Bar */}
             <div className={`flex flex-col items-center transition-all duration-500 ${results || isFocused ? 'mt-8' : 'mt-[20vh]'}`}>
@@ -68,11 +62,11 @@ export default function SearchView() {
                     className={`relative w-full max-w-4xl z-20 ${isFocused ? 'scale-105' : 'scale-100'}`}
                 >
                     {/* Glow Background Blob */}
-                    <div className="absolute inset-0 bg-cyan-500/20 blur-3xl rounded-full opacity-0 transition-opacity duration-500"
-                        style={{ opacity: isFocused ? 0.4 : 0.1 }} />
+                    <div className="absolute inset-0 bg-[var(--dynamic-glow-primary)] blur-[100px] rounded-full opacity-0 transition-opacity duration-500"
+                        style={{ opacity: isFocused ? 0.3 : 0.1 }} />
 
                     <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none z-30">
-                        <Search className={`w-6 h-6 transition-colors ${isFocused ? 'text-cyan-400' : 'text-gray-400'}`} />
+                        <Search className={`w-6 h-6 transition-colors ${isFocused ? 'text-[var(--dynamic-glow-primary)]' : 'text-gray-400'}`} />
                     </div>
                     <input
                         ref={inputRef}
@@ -82,11 +76,11 @@ export default function SearchView() {
                         onFocus={() => setIsFocused(true)}
                         onBlur={() => setIsFocused(false)}
                         placeholder={t.searchView?.placeholder || "What do you want to listen to?"}
-                        className="w-full bg-[#181818]/80 backdrop-blur-xl border border-white/10 rounded-full py-6 pl-16 pr-8 text-xl placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 focus:bg-[#202020] transition-all shadow-[0_0_20px_rgba(0,0,0,0.5)] focus:shadow-[0_0_40px_rgba(0,243,255,0.2)] relative z-20"
+                        className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-full py-6 pl-16 pr-8 text-xl placeholder-gray-500 focus:outline-none focus:border-[var(--dynamic-glow-primary)]/50 focus:ring-1 focus:ring-[var(--dynamic-glow-primary)]/50 focus:bg-white/10 transition-all shadow-[0_0_20px_rgba(0,0,0,0.5)] focus:shadow-[0_0_40px_var(--dynamic-glow-primary)] relative z-20"
                     />
                     {isLoading && (
                         <div className="absolute inset-y-0 right-6 flex items-center z-30">
-                            <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+                            <div className="w-6 h-6 border-2 border-[var(--dynamic-glow-primary)] border-t-transparent rounded-full animate-spin"></div>
                         </div>
                     )}
                 </motion.div>
@@ -117,10 +111,10 @@ export default function SearchView() {
                             {results.topResult && (
                                 <section>
                                     <h2 className="text-xl font-bold mb-4">{t.searchView?.topResult || "Top Result"}</h2>
-                                    <div className="group relative bg-[#181818] hover:bg-[#202020] p-6 rounded-3xl transition-all duration-300 border border-white/5 hover:border-white/10 shadow-xl hover:shadow-2xl hover:scale-[1.02] cursor-pointer"
+                                    <div className="group relative bg-white/5 hover:bg-white/10 p-6 rounded-3xl transition-all duration-300 border border-white/5 hover:border-[var(--dynamic-glow-primary)]/30 shadow-xl hover:shadow-[0_0_30px_var(--dynamic-glow-primary)] hover:scale-[1.02] cursor-pointer"
                                         onClick={() => handlePlay(results.topResult)}>
                                         <div className="relative aspect-square w-32 h-32 mb-6 rounded-full overflow-hidden shadow-2xl mx-auto lg:mx-0">
-                                            <Image
+                                            <CoverImage
                                                 src={results.topResult.thumbnail}
                                                 alt={results.topResult.title}
                                                 fill
@@ -130,14 +124,14 @@ export default function SearchView() {
                                                 <Play fill="white" size={32} />
                                             </div>
                                         </div>
-                                        <h3 className="text-2xl font-bold truncate glow-text mb-1">{results.topResult.title}</h3>
+                                        <h3 className="text-2xl font-bold truncate glow-text mb-1 group-hover:text-[var(--dynamic-accent)] transition-colors">{results.topResult.title}</h3>
                                         <div className="flex items-center gap-2 text-gray-400">
                                             <span className="bg-white/10 px-2 py-0.5 rounded text-xs font-medium text-white">{t.searchView?.song || "Song"}</span>
                                             <span className="truncate">{results.topResult.artist}</span>
                                         </div>
 
                                         <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
-                                            <button className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition">
+                                            <button className="w-12 h-12 bg-[var(--dynamic-accent)] rounded-full flex items-center justify-center shadow-[0_0_15px_var(--dynamic-accent)] hover:scale-110 transition">
                                                 <Play fill="black" className="text-black ml-1" />
                                             </button>
                                         </div>
@@ -151,12 +145,12 @@ export default function SearchView() {
                                     <h2 className="text-xl font-bold mb-4">{t.searchView?.artists || "Artists"}</h2>
                                     <div className="space-y-3">
                                         {results.artists.map((artist, index) => (
-                                            <div key={`${artist.id}-${index}`} className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition cursor-pointer group">
+                                            <div key={`${artist.id}-${index}`} className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition cursor-pointer group border border-transparent hover:border-white/5">
                                                 <div className="relative w-12 h-12 rounded-full overflow-hidden">
-                                                    <Image src={artist.thumbnail} alt={artist.name} fill className="object-cover" />
+                                                    <CoverImage src={artist.thumbnail} alt={artist.name} fill className="object-cover" />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <div className="font-semibold group-hover:text-cyan-400 transition-colors">{artist.name}</div>
+                                                    <div className="font-semibold group-hover:text-[var(--dynamic-accent)] transition-colors">{artist.name}</div>
                                                     <div className="text-xs text-gray-400">{t.searchView?.artist || "Artist"}</div>
                                                 </div>
                                             </div>
@@ -178,13 +172,13 @@ export default function SearchView() {
                                             className="group flex items-center gap-4 p-3 rounded-xl hover:bg-white/10 transition cursor-pointer border border-transparent hover:border-white/5"
                                         >
                                             <div className="relative w-10 h-10 shrink-0 rounded overflow-hidden">
-                                                <Image src={song.thumbnail} alt={song.title} fill className="object-cover" />
+                                                <CoverImage src={song.thumbnail} alt={song.title} fill className="object-cover" />
                                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                                     <Play size={16} fill="white" />
                                                 </div>
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <div className={`font-medium truncate ${currentTrack?.id === song.id ? 'text-cyan-400' : 'text-white group-hover:text-cyan-400'} transition-colors`}>
+                                                <div className={`font-medium truncate ${currentTrack?.id === song.id ? 'text-[var(--dynamic-glow-primary)]' : 'text-white group-hover:text-[var(--dynamic-accent)]'} transition-colors`}>
                                                     {song.title}
                                                 </div>
                                                 <div className="text-sm text-gray-400 truncate">{song.artist}</div>
@@ -192,7 +186,7 @@ export default function SearchView() {
                                             <div className="text-sm text-gray-500 font-mono">
                                                 {Math.floor(song.duration / 60)}:{String(song.duration % 60).padStart(2, '0')}
                                             </div>
-                                            <button className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white transition">
+                                            <button className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-[var(--dynamic-accent)] transition">
                                                 <Heart size={18} />
                                             </button>
                                         </div>

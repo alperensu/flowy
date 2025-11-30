@@ -4,6 +4,8 @@ const STORAGE_KEYS = {
     LIKED: 'spotify_clone_liked',
 };
 
+import { normalizeTrackData } from './trackUtils';
+
 export const getPlaylists = () => {
     if (typeof window === 'undefined') return [];
     const stored = localStorage.getItem(STORAGE_KEYS.PLAYLISTS);
@@ -57,7 +59,8 @@ export const addToPlaylist = (playlistId, track) => {
     const playlist = playlists.find(p => p.id === playlistId);
     if (playlist) {
         if (!playlist.tracks.find(t => t.id === track.id)) {
-            playlist.tracks.push(track);
+            const normalizedTrack = normalizeTrackData(track);
+            playlist.tracks.push(normalizedTrack);
             localStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(playlists));
             if (typeof window !== 'undefined') window.dispatchEvent(new Event('playlist-update'));
             return true;
@@ -75,7 +78,8 @@ export const toggleLike = (track) => {
     if (exists) {
         liked = liked.filter(t => t.id !== track.id);
     } else {
-        liked.push(track);
+        const normalizedTrack = normalizeTrackData(track);
+        liked.push(normalizedTrack);
     }
 
     localStorage.setItem(STORAGE_KEYS.LIKED, JSON.stringify(liked));
@@ -102,7 +106,8 @@ export const addToHistory = (track) => {
     let history = stored ? JSON.parse(stored) : [];
     // Remove if exists to move to top
     history = history.filter(t => t.id !== track.id);
-    history.unshift(track);
+    const normalizedTrack = normalizeTrackData(track);
+    history.unshift(normalizedTrack);
     // Limit to 50
     if (history.length > 50) history.pop();
     localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));

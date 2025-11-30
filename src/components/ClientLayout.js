@@ -1,6 +1,7 @@
 'use client';
 import { Suspense, useEffect } from "react";
 import dynamic from 'next/dynamic';
+import { usePathname } from "next/navigation";
 
 const Sidebar = dynamic(() => import("@/components/Sidebar"), { ssr: false });
 const Player = dynamic(() => import("@/components/Player"), { ssr: false });
@@ -31,11 +32,15 @@ import PageTransition from "@/components/ui/PageTransition";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { DragProvider } from "@/context/DragContext";
 import DragGhost from "@/components/DragGhost";
+import DynamicBackground from "@/components/DynamicBackground";
 
 function MainContent() {
     const { currentView } = useNavigation();
+    // PlaylistView handles its own scrolling via VirtualizedList
+    const isSelfScrolling = currentView === 'playlist' || currentView === 'liked-songs';
+
     return (
-        <main className="flex-1 overflow-y-auto custom-scrollbar relative overflow-x-hidden">
+        <main className={`flex-1 relative overflow-x-hidden ${isSelfScrolling ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'}`}>
             <PageTransition>
                 {currentView === 'home' && <HomeView />}
                 {currentView === 'search' && <SearchView />}
@@ -44,19 +49,6 @@ function MainContent() {
                 {currentView === 'artist' && <ArtistView />}
             </PageTransition>
         </main>
-    );
-}
-
-function DynamicBackground() {
-    const { currentTrack } = usePlayer();
-    if (!currentTrack) return null;
-    const cover = currentTrack.album?.cover_xl || currentTrack.album?.cover_medium || currentTrack.cover_xl || currentTrack.cover_medium;
-    if (!cover) return null;
-    return (
-        <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-            <div className="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out opacity-30 blur-3xl scale-110" style={{ backgroundImage: `url(${cover})` }} />
-            <div className="absolute inset-0 bg-black/40" />
-        </div>
     );
 }
 
