@@ -24,7 +24,7 @@ export default function Player() {
         currentTrack, isPlaying, setIsPlaying, togglePlay, repeatMode, toggleRepeat,
         nextTrack, prevTrack, isShuffled, toggleShuffle, toggleQueue, isQueueOpen,
         toggleFullScreenPlayer, currentTime, setCurrentTime, duration, setDuration, setPlayerRef,
-        updateProgress, subscribeToProgress
+        updateProgress, subscribeToProgress, autoPlayRef
     } = usePlayer();
 
     const { recordInteraction } = useRecommendation();
@@ -154,7 +154,11 @@ export default function Player() {
                         setIsLoadingYoutube(false);
                         // Ensure AudioContext is resumed before playing
                         audioController.resume();
-                        setIsPlaying(true);
+                        if (autoPlayRef.current) {
+                            setIsPlaying(true);
+                        } else {
+                            setIsPlaying(false);
+                        }
                     } else {
                         console.warn("Player: No video ID found");
                         setYoutubeId(null);
@@ -248,36 +252,60 @@ export default function Player() {
         return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     };
 
-    if (!currentTrack) return null;
+    // if (!currentTrack) return null; // REMOVED: Allow rendering without track for initial state
+
+    // Determine positioning based on hasPlayedOnce
+    const { hasPlayedOnce } = usePlayer();
+
+    // Placeholder data for initial state
+    const displayTrack = currentTrack || {
+        title: "Welcome to Flowy",
+        artist: "Select a song to start listening",
+        album: { cover_small: null }
+    };
 
     return (
         <>
             <motion.div
-                drag
+                drag="y"
                 dragMomentum={false}
                 dragElastic={0.1}
-                dragConstraints={{ left: -window.innerWidth / 2, right: window.innerWidth / 2, top: -window.innerHeight + 100, bottom: 0 }}
-                animate={controls}
+                dragConstraints={{ top: -window.innerHeight + 100, bottom: 0 }}
+                animate={hasPlayedOnce ? controls : { y: 0 }} // Only animate Y
+                initial={false}
                 onDragEnd={(event, info) => {
-                    // Snap to bottom if close (within 150px)
-                    if (info.point.y > window.innerHeight - 150) {
-                        controls.start({ x: 0, y: 0, transition: { type: "spring", stiffness: 300, damping: 30 } });
+                    // Snap to bottom if dropped within the bottom 30% of the screen
+                    const threshold = window.innerHeight * 0.7;
+                    if (info.point.y > threshold) {
+                        controls.start({ y: 0, transition: { type: "spring", stiffness: 300, damping: 30 } });
                     }
                 }}
-                className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[1400px] h-24 glass-panel rounded-[32px] px-6 flex items-center justify-between z-50 shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-white/10 backdrop-blur-xl transition-colors duration-500 cursor-grab active:cursor-grabbing"
+                className={`fixed h-24 glass-panel px-6 flex items-center justify-between z-50 shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-white/10 backdrop-blur-xl cursor-grab active:cursor-grabbing will-change-transform`}
                 style={{
+                    width: '90%',
+                    maxWidth: '1400px',
+                    left: 0,
+                    right: 0,
+                    margin: '0 auto',
+                    borderRadius: '32px',
+                    bottom: '24px',
                     borderColor: `rgba(${accentColor.replace('rgb(', '').replace(')', '')}, 0.2)`,
-                    boxShadow: `0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(${accentColor.replace('rgb(', '').replace(')', '')}, 0.1)`,
-                    x: "-50%" // Maintain centering while allowing drag offset
+                    boxShadow: `0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(${accentColor.replace('rgb(', '').replace(')', '')}, 0.1)`
                 }}
             >
                 <div className="flex items-center gap-3 w-full md:w-[30%]">
                     <div
                         className="relative h-14 w-14 md:h-16 md:w-16 shrink-0 group cursor-pointer"
-                        onClick={(e) => { e.stopPropagation(); toggleFullScreenPlayer(); }}
+                        onClick={(e) => { e.stopPropagation(); if (currentTrack) toggleFullScreenPlayer(); }}
                     >
                         <Image
-                            src={currentTrack.album?.cover_small || "/placeholder-album.jpg"}
+                            src={
+                                displayTrack.cover_url ||
+                                displayTrack.cover_xl || displayTrack.cover_medium || displayTrack.cover_small ||
+                                displayTrack.album?.cover_xl || displayTrack.album?.cover_medium || displayTrack.album?.cover_small ||
+                                displayTrack.image ||
+                                "/placeholder-album.jpg"
+                            }
                             alt="Cover"
                             fill
                             className="rounded-md object-cover shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all duration-300"
@@ -286,84 +314,88 @@ export default function Player() {
                         <div className="absolute inset-0 rounded-md border border-white/10" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <div className="text-white text-sm font-bold truncate glow-text">{currentTrack.title}</div>
-                        <div className="text-xs text-gray-400 truncate">{currentTrack.artist?.name || (typeof currentTrack.artist === 'string' ? currentTrack.artist : 'Unknown')}</div>
+                        <div className="text-white text-sm font-bold truncate glow-text">{displayTrack.title}</div>
+                        <div className="text-xs text-gray-400 truncate">{displayTrack.artist?.name || (typeof displayTrack.artist === 'string' ? displayTrack.artist : 'Unknown')}</div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex items-center gap-1 -translate-x-2 -translate-y-1">
-                        {/* Like Button */}
-                        <button onClick={(e) => { e.stopPropagation(); handleLike(); }} className={`transition hover:scale-110 ${liked ? 'text-cyan-400 drop-shadow-[0_0_10px_rgba(0,243,255,0.8)]' : 'text-gray-400 hover:text-white'}`}>
-                            <Heart size={20} fill={liked ? "currentColor" : "none"} />
-                        </button>
-
-                        {/* Add to Playlist Button */}
-                        <div className="relative">
-                            <button
-                                onClick={handleAddToPlaylist}
-                                className={`transition hover:scale-110 ml-1 ${addedFeedback ? 'text-green-500' : 'text-gray-400 hover:text-white'}`}
-                            >
-                                {addedFeedback ? <Check size={20} /> : <ListPlus size={20} />}
+                    {/* Action Buttons - Only show if track exists */}
+                    {currentTrack && (
+                        <div className="flex items-center gap-1 -translate-x-2 -translate-y-1">
+                            {/* Like Button */}
+                            <button onClick={(e) => { e.stopPropagation(); handleLike(); }} className={`transition hover:scale-110 ${liked ? 'text-cyan-400 drop-shadow-[0_0_10px_rgba(0,243,255,0.8)]' : 'text-gray-400 hover:text-white'}`}>
+                                <Heart size={20} fill={liked ? "currentColor" : "none"} />
                             </button>
 
-                            {/* Playlist Menu */}
-                            {showPlaylistMenu && (
-                                <div className="absolute bottom-full left-0 mb-2 w-48 bg-[#181818] border border-white/10 rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                                    <div className="p-2 border-b border-white/10 text-xs text-gray-400 font-medium">Add to Playlist</div>
-                                    <div className="max-h-48 overflow-y-auto custom-scrollbar">
-                                        {playlists.map(p => (
+                            {/* Add to Playlist Button */}
+                            <div className="relative">
+                                <button
+                                    onClick={handleAddToPlaylist}
+                                    className={`transition hover:scale-110 ml-1 ${addedFeedback ? 'text-green-500' : 'text-gray-400 hover:text-white'}`}
+                                >
+                                    {addedFeedback ? <Check size={20} /> : <ListPlus size={20} />}
+                                </button>
+
+                                {/* Playlist Menu */}
+                                {showPlaylistMenu && (
+                                    <div className="absolute bottom-full left-0 mb-2 w-48 bg-[#181818] border border-white/10 rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="p-2 border-b border-white/10 text-xs text-gray-400 font-medium">Add to Playlist</div>
+                                        <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                                            {playlists.map(p => (
+                                                <button
+                                                    key={p.id}
+                                                    onClick={(e) => { e.stopPropagation(); handlePlaylistSelect(p.id); }}
+                                                    className="w-full text-left px-3 py-2 text-sm text-white hover:bg-white/10 transition truncate"
+                                                >
+                                                    {p.name}
+                                                </button>
+                                            ))}
                                             <button
-                                                key={p.id}
-                                                onClick={(e) => { e.stopPropagation(); handlePlaylistSelect(p.id); }}
-                                                className="w-full text-left px-3 py-2 text-sm text-white hover:bg-white/10 transition truncate"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const newPl = createPlaylist(currentTrack.title);
+                                                    handlePlaylistSelect(newPl.id);
+                                                }}
+                                                className="w-full text-left px-3 py-2 text-sm text-cyan-400 hover:bg-white/10 transition flex items-center gap-2"
                                             >
-                                                {p.name}
+                                                <Plus size={14} /> New Playlist
                                             </button>
-                                        ))}
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                const newPl = createPlaylist(currentTrack.title);
-                                                handlePlaylistSelect(newPl.id);
-                                            }}
-                                            className="w-full text-left px-3 py-2 text-sm text-cyan-400 hover:bg-white/10 transition flex items-center gap-2"
-                                        >
-                                            <Plus size={14} /> New Playlist
-                                        </button>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 <div className="hidden md:flex flex-col items-center justify-center w-[40%]">
                     <div className="flex items-center gap-4 mb-2">
-                        <button onClick={(e) => { e.stopPropagation(); toggleShuffle(); }} className={`transition hover:scale-110 ${isShuffled ? 'text-cyan-400 drop-shadow-[0_0_5px_rgba(0,243,255,0.5)]' : 'text-gray-400 hover:text-white'}`}>
+                        <button onClick={(e) => { e.stopPropagation(); toggleShuffle(); }} disabled={!currentTrack} className={`transition hover:scale-110 ${isShuffled ? 'text-cyan-400 drop-shadow-[0_0_5px_rgba(0,243,255,0.5)]' : 'text-gray-400 hover:text-white'} ${!currentTrack && 'opacity-50 cursor-not-allowed'}`}>
                             <Shuffle size={18} />
                         </button>
-                        <button onClick={(e) => { e.stopPropagation(); prevTrack(); }} className="text-gray-400 hover:text-white transition hover:scale-110 glow-hover">
+                        <button onClick={(e) => { e.stopPropagation(); prevTrack(); }} disabled={!currentTrack} className={`text-gray-400 hover:text-white transition hover:scale-110 glow-hover ${!currentTrack && 'opacity-50 cursor-not-allowed'}`}>
                             <SkipBack size={20} />
                         </button>
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                audioController.resume();
-                                togglePlay();
+                                if (currentTrack) {
+                                    audioController.resume();
+                                    togglePlay();
+                                }
                             }}
-                            disabled={isLoadingYoutube || !youtubeId}
-                            className="w-10 h-10 bg-white rounded-full flex items-center justify-center hover:scale-110 transition disabled:opacity-50 shadow-[0_0_15px_rgba(255,255,255,0.4)] hover:shadow-[0_0_25px_rgba(255,255,255,0.6)]"
+                            disabled={!currentTrack || (isLoadingYoutube && !youtubeId)}
+                            className={`w-10 h-10 bg-white rounded-full flex items-center justify-center hover:scale-110 transition disabled:opacity-50 shadow-[0_0_15px_rgba(255,255,255,0.4)] hover:shadow-[0_0_25px_rgba(255,255,255,0.6)] ${!currentTrack && 'opacity-50 cursor-not-allowed'}`}
                         >
-                            {isLoadingYoutube ? (
+                            {isLoadingYoutube && currentTrack ? (
                                 <Loader2 size={24} className="text-black animate-spin" />
                             ) : (
                                 isPlaying ? <Pause size={24} className="text-black" fill="black" /> : <Play size={24} className="text-black ml-1" fill="black" />
                             )}
                         </button>
-                        <button onClick={(e) => { e.stopPropagation(); nextTrack(); }} className="text-gray-400 hover:text-white transition hover:scale-110 glow-hover">
+                        <button onClick={(e) => { e.stopPropagation(); nextTrack(); }} disabled={!currentTrack} className={`text-gray-400 hover:text-white transition hover:scale-110 glow-hover ${!currentTrack && 'opacity-50 cursor-not-allowed'}`}>
                             <SkipForward size={20} />
                         </button>
-                        <button onClick={(e) => { e.stopPropagation(); toggleRepeat(); }} className={`transition hover:scale-110 ${repeatMode !== 'off' ? 'text-cyan-400 drop-shadow-[0_0_5px_rgba(0,243,255,0.5)]' : 'text-gray-400 hover:text-white'}`}>
+                        <button onClick={(e) => { e.stopPropagation(); toggleRepeat(); }} disabled={!currentTrack} className={`transition hover:scale-110 ${repeatMode !== 'off' ? 'text-cyan-400 drop-shadow-[0_0_5px_rgba(0,243,255,0.5)]' : 'text-gray-400 hover:text-white'} ${!currentTrack && 'opacity-50 cursor-not-allowed'}`}>
                             {repeatMode === 'one' ? <Repeat1 size={18} /> : <Repeat size={18} />}
                         </button>
                     </div>
@@ -377,7 +409,8 @@ export default function Player() {
                             onChange={handleSeekChange}
                             onMouseUp={handleSeekEnd}
                             onTouchEnd={handleSeekEnd}
-                            className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer hover:h-1.5 transition-all [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+                            disabled={!currentTrack}
+                            className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer hover:h-1.5 transition-all [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(255,255,255,0.8)] disabled:opacity-50 disabled:cursor-not-allowed"
                             style={{
                                 background: `linear-gradient(to right, ${accentColor} ${(uiTime / (duration || 1)) * 100}%, rgba(255, 255, 255, 0.1) ${(uiTime / (duration || 1)) * 100}%)`
                             }}
@@ -387,10 +420,10 @@ export default function Player() {
                 </div>
 
                 <div className="hidden md:flex items-center gap-4 w-[30%] justify-end">
-                    <button className="text-gray-400 hover:text-white transition hover:scale-110">
+                    <button className="text-gray-400 hover:text-white transition hover:scale-110" disabled={!currentTrack}>
                         <Mic2 size={20} />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); toggleQueue(); }} className={`transition hover:scale-110 ${isQueueOpen ? 'text-cyan-400 drop-shadow-[0_0_5px_rgba(0,243,255,0.5)]' : 'text-gray-400 hover:text-white'}`}>
+                    <button onClick={(e) => { e.stopPropagation(); toggleQueue(); }} disabled={!currentTrack} className={`transition hover:scale-110 ${isQueueOpen ? 'text-cyan-400 drop-shadow-[0_0_5px_rgba(0,243,255,0.5)]' : 'text-gray-400 hover:text-white'} ${!currentTrack && 'opacity-50 cursor-not-allowed'}`}>
                         <ListMusic size={20} />
                     </button>
                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>

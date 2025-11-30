@@ -71,48 +71,67 @@ ipcMain.handle('youtube:search', async (event, { artist, title, duration }) => {
         throw new Error('Missing artist or title');
     }
 
-    let query = `${artist} - ${title} official audio`;
+    const query = `${artist} - ${title} Official Audio`;
 
     try {
         console.log(`[Main] Searching yt-search for: ${query}`);
-        let r = await ytSearch(query);
-        let videos = r.videos;
+        const r = await ytSearch(query);
+        const videos = r.videos;
 
-        if (videos.length === 0) {
-            query = `${artist} - ${title}`;
-            console.log(`[Main] Retry: ${query}`);
-            r = await ytSearch(query);
-            videos = r.videos;
-        }
-
-        if (videos.length === 0) {
-            query = title;
-            console.log(`[Main] Retry title: ${query}`);
-            r = await ytSearch(query);
-            videos = r.videos;
-        }
-
-        if (videos.length > 0) {
-            // Filter logic (simplified from API route)
-            const filterVideos = (tolerance) => {
-                return videos.filter(v => {
-                    if (!duration) return true;
-                    const targetDuration = parseInt(duration);
-                    return Math.abs(targetDuration - v.seconds) <= tolerance;
-                });
-            };
-
-            let candidates = filterVideos(5);
-            if (candidates.length === 0) candidates = filterVideos(15);
-            if (candidates.length === 0) candidates = filterVideos(30);
-            if (candidates.length === 0) candidates = [videos[0]];
-
-            const bestMatch = candidates[0];
-            console.log(`[Main] Match: ${bestMatch.title} (${bestMatch.videoId})`);
-            return { videoId: bestMatch.videoId };
-        } else {
+        if (!videos || videos.length === 0) {
             throw new Error('No video found');
         }
+
+        // Filter Logic
+        const cleanTitle = title.toLowerCase();
+
+        // Words to avoid unless they are in the original title
+        const negativeWords = ['live', 'concert', 'cover', 'remix', 'karaoke', 'tour'];
+        const allowedNegativeWords = negativeWords.filter(w => cleanTitle.includes(w));
+        const bannedWords = negativeWords.filter(w => !allowedNegativeWords.includes(w));
+
+        const candidates = videos.filter(v => {
+            const vTitle = v.title.toLowerCase();
+
+            // Must contain song title (loose check)
+            if (!vTitle.includes(cleanTitle)) return false;
+
+            // Check for banned words
+            if (bannedWords.some(w => vTitle.includes(w))) return false;
+
+            return true;
+        });
+
+        const searchPool = candidates.length > 0 ? candidates : videos;
+
+        if (duration) {
+            const targetDuration = parseInt(duration);
+
+            // Tier 1: Exact duration match (+/- 5s)
+            const exactMatch = searchPool.find(v => Math.abs(v.seconds - targetDuration) <= 5);
+            if (exactMatch) {
+                console.log(`[Main] Exact duration match: ${exactMatch.title}`);
+                return { videoId: exactMatch.videoId };
+            }
+
+            // Tier 2: Close duration match (+/- 15s)
+            const closeMatch = searchPool.find(v => Math.abs(v.seconds - targetDuration) <= 15);
+            if (closeMatch) {
+                console.log(`[Main] Close duration match: ${closeMatch.title}`);
+                return { videoId: closeMatch.videoId };
+            }
+        }
+
+        // Tier 3: Best filtered match
+        if (candidates.length > 0) {
+            console.log(`[Main] Best filtered match: ${candidates[0].title}`);
+            return { videoId: candidates[0].videoId };
+        }
+
+        // Fallback
+        console.log(`[Main] Fallback match: ${videos[0].title}`);
+        return { videoId: videos[0].videoId };
+
     } catch (error) {
         console.error('[Main] Search Error:', error);
         throw error;

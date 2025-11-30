@@ -27,7 +27,13 @@ export default function ShortcutCard({ item }) {
         >
             <div className="relative h-16 w-16 min-w-[64px] shadow-lg">
                 <Image
-                    src={item.cover_url || item.album?.cover_medium || item.image || '/images/default-album.png'}
+                    src={
+                        item.cover_url ||
+                        item.cover_xl || item.cover_medium || item.cover_small ||
+                        item.album?.cover_xl || item.album?.cover_medium || item.album?.cover_small ||
+                        item.image ||
+                        "/placeholder-album.jpg"
+                    }
                     alt={item.title}
                     fill
                     className="object-cover"

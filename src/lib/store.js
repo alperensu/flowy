@@ -7,12 +7,36 @@ const STORAGE_KEYS = {
 export const getPlaylists = () => {
     if (typeof window === 'undefined') return [];
     const stored = localStorage.getItem(STORAGE_KEYS.PLAYLISTS);
-    return stored ? JSON.parse(stored) : [];
+    let playlists = stored ? JSON.parse(stored) : [];
+
+    // Migration: Assign dynamic covers to existing playlists
+    let changed = false;
+    playlists = playlists.map(p => {
+        // If cover is missing OR it was one of the old local files
+        if (!p.cover_url || p.cover_url.includes('/images/playlist-covers/')) {
+            // Use Picsum with playlist ID as seed for consistent random image
+            p.cover_url = `https://picsum.photos/seed/${p.id}/500/500`;
+            changed = true;
+        }
+        return p;
+    });
+
+    if (changed) {
+        localStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(playlists));
+    }
+
+    return playlists;
 };
 
 export const createPlaylist = (name) => {
     const playlists = getPlaylists();
-    const newPlaylist = { id: Date.now().toString(), name, tracks: [] };
+    const id = Date.now().toString();
+    const newPlaylist = {
+        id,
+        name,
+        tracks: [],
+        cover_url: `https://picsum.photos/seed/${id}/500/500`
+    };
     playlists.push(newPlaylist);
     localStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(playlists));
     if (typeof window !== 'undefined') window.dispatchEvent(new Event('playlist-update'));

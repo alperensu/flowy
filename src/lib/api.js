@@ -1,3 +1,5 @@
+import { mockChart, mockNewReleases, mockSearchResults } from './mockData';
+
 const API_BASE = '/api/proxy';
 const DEEZER_API = 'https://api.deezer.com';
 
@@ -28,6 +30,7 @@ const fetchFromApi = async (params) => {
       if (value) searchParams.append(key, value);
     });
     const res = await fetch(`${API_BASE}?${searchParams.toString()}`);
+    if (!res.ok) throw new Error(`API Error: ${res.status}`);
     return res.json();
   }
 };
@@ -35,40 +38,54 @@ const fetchFromApi = async (params) => {
 export const searchTracks = async (query) => {
   try {
     const data = await fetchFromApi({ q: query, type: 'track' });
-    return data.data || [];
+    const results = data.data || [];
+    if (results.length === 0 && mockSearchResults?.tracks) {
+      return mockSearchResults.tracks.filter(t => t.title.toLowerCase().includes(query.toLowerCase()));
+    }
+    return results;
   } catch (error) {
     console.error("Search error:", error);
-    return [];
+    return mockSearchResults?.tracks || [];
   }
 };
 
 export const searchArtists = async (query) => {
   try {
     const data = await fetchFromApi({ q: query, type: 'artist' });
-    return data.data || [];
+    const results = data.data || [];
+    if (results.length === 0 && mockSearchResults?.artists) {
+      return mockSearchResults.artists.filter(a => a.name.toLowerCase().includes(query.toLowerCase()));
+    }
+    return results;
   } catch (error) {
     console.error("Search artists error:", error);
-    return [];
+    return mockSearchResults?.artists || [];
   }
 };
 
 export const searchAlbums = async (query) => {
   try {
     const data = await fetchFromApi({ q: query, type: 'album' });
-    return data.data || [];
+    const results = data.data || [];
+    if (results.length === 0 && mockSearchResults?.albums) {
+      return mockSearchResults.albums.filter(a => a.title.toLowerCase().includes(query.toLowerCase()));
+    }
+    return results;
   } catch (error) {
     console.error("Search albums error:", error);
-    return [];
+    return mockSearchResults?.albums || [];
   }
 };
 
 export const getChart = async () => {
   try {
     const data = await fetchFromApi({ chart: true });
-    return data.tracks?.data || [];
+    const tracks = data.tracks?.data || [];
+    if (tracks.length === 0) return mockChart;
+    return tracks;
   } catch (error) {
     console.error("Chart error:", error);
-    return [];
+    return mockChart;
   }
 };
 
@@ -94,9 +111,11 @@ export const getArtistTopTracks = async (id) => {
 export const getNewReleases = async () => {
   try {
     const data = await fetchFromApi({ new_releases: true });
-    return data.data || [];
+    const albums = data.data || [];
+    if (albums.length === 0) return mockNewReleases;
+    return albums;
   } catch (error) {
     console.error("New releases error:", error);
-    return [];
+    return mockNewReleases;
   }
 };

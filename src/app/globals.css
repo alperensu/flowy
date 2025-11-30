@@ -74,6 +74,10 @@ body {
   will-change: box-shadow, filter;
 }
 
+.will-change-transform {
+  will-change: transform;
+}
+
 /* Noise Texture Overlay */
 body::after {
   content: "";

@@ -59,7 +59,13 @@ export default function AlbumCard({ item, context = [] }) {
                 className="relative mb-4 cursor-pointer aspect-square w-full overflow-hidden rounded-lg"
             >
                 <Image
-                    src={item.cover_url || item.album?.cover_medium || item.cover_medium || item.image || "/placeholder-album.jpg"}
+                    src={
+                        item.cover_url ||
+                        item.cover_xl || item.cover_medium || item.cover_small ||
+                        item.album?.cover_xl || item.album?.cover_medium || item.album?.cover_small ||
+                        item.image ||
+                        "/placeholder-album.jpg"
+                    }
                     alt={item.title}
                     fill
                     className="object-cover transition duration-500 group-hover:scale-110 group-hover:rotate-1"

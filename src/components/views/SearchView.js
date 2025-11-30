@@ -22,11 +22,58 @@ export default function SearchView() {
     const { startDrag, endDrag } = useDrag();
 
     const [tracks, setTracks] = useState([]);
-    // ... (state declarations)
+    const [artists, setArtists] = useState([]);
+    const [albums, setAlbums] = useState([]);
+    const [filter, setFilter] = useState('all');
+    const [topResult, setTopResult] = useState(null);
 
-    // ... (useEffect hooks)
+    useEffect(() => {
+        if (!searchQuery) return;
 
-    // ... (helper functions)
+        const performSearch = async () => {
+            try {
+                const [trackResults, artistResults, albumResults] = await Promise.all([
+                    searchTracks(searchQuery),
+                    searchArtists(searchQuery),
+                    searchAlbums(searchQuery)
+                ]);
+
+                setTracks(trackResults);
+                setArtists(artistResults);
+                setAlbums(albumResults);
+
+                // Determine top result
+                if (trackResults.length > 0) {
+                    setTopResult({ ...trackResults[0], type: 'track' });
+                } else if (artistResults.length > 0) {
+                    setTopResult({ ...artistResults[0], type: 'artist' });
+                } else {
+                    setTopResult(null);
+                }
+            } catch (error) {
+                console.error("Search failed:", error);
+            }
+        };
+
+        const debounce = setTimeout(performSearch, 300);
+        return () => clearTimeout(debounce);
+    }, [searchQuery]);
+
+    const getSourceIcon = (source) => {
+        // Helper for source icon if needed, returning null for now or implementing logic
+        return null;
+    };
+
+    const handlePlayTopResult = (e) => {
+        e.stopPropagation();
+        if (topResult) {
+            if (topResult.type === 'track') {
+                playTrack(topResult, tracks);
+            } else if (topResult.type === 'artist') {
+                navigateTo('artist', '', { artist: topResult });
+            }
+        }
+    };
 
     const renderTrackItem = (track, index) => (
         <div

@@ -17,8 +17,10 @@ export function PlayerProvider({ children }) {
     const [isFullScreenPlayerOpen, setIsFullScreenPlayerOpen] = useState(false);
 
     const [sessionHistory, setSessionHistory] = useState([]);
+    const [hasPlayedOnce, setHasPlayedOnce] = useState(false); // New: Track if user has played anything
 
     const [currentContextId, setCurrentContextId] = useState(null); // New: Track the source playlist/context ID
+    const autoPlayRef = useRef(false); // New: Track if playback should start automatically (prevent on load)
 
     // Persistence: Load State
     useEffect(() => {
@@ -73,8 +75,10 @@ export function PlayerProvider({ children }) {
     }, [originalQueue]);
 
     const playTrack = (track, contextTracks = [], contextId = null) => {
+        autoPlayRef.current = true;
         setCurrentTrack(track);
         setIsPlaying(true);
+        setHasPlayedOnce(true);
         setCurrentContextId(contextId);
 
         if (contextTracks.length > 0) {
@@ -109,6 +113,7 @@ export function PlayerProvider({ children }) {
     const togglePlay = () => {
         if (currentTrack) {
             setIsPlaying(!isPlaying);
+            if (!isPlaying) setHasPlayedOnce(true);
         }
     };
 
@@ -152,6 +157,7 @@ export function PlayerProvider({ children }) {
         if (nextTrackCandidate) {
             setSessionHistory(prev => [...prev, currentTrack]);
             setQueue(nextQueue);
+            autoPlayRef.current = true;
             setCurrentTrack(nextTrackCandidate);
             setIsPlaying(true);
         }
@@ -168,6 +174,7 @@ export function PlayerProvider({ children }) {
 
         setSessionHistory(newHistory);
         setQueue(newQueue);
+        autoPlayRef.current = true;
         setCurrentTrack(previousTrack);
         setIsPlaying(true);
     };
@@ -275,8 +282,10 @@ export function PlayerProvider({ children }) {
         setDuration,
         seekTo,
         setPlayerRef,
-        currentContextId // Expose context ID
-    }), [currentTrack, isPlaying, repeatMode, queue, isShuffled, isSmartShuffle, isQueueOpen, isFullScreenPlayerOpen, originalQueue, sessionHistory, currentTime, duration, playerRef, currentContextId]);
+        currentContextId, // Expose context ID
+        hasPlayedOnce, // Expose hasPlayedOnce
+        autoPlayRef // Expose autoPlayRef for Player component
+    }), [currentTrack, isPlaying, repeatMode, queue, isShuffled, isSmartShuffle, isQueueOpen, isFullScreenPlayerOpen, originalQueue, sessionHistory, currentTime, duration, playerRef, currentContextId, hasPlayedOnce]);
 
     return (
         <PlayerContext.Provider value={value}>

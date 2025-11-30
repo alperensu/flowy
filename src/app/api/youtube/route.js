@@ -29,41 +29,46 @@ export async function GET(request) {
 
         let bestMatch = videos[0];
 
-        // Filter out obviously wrong titles (e.g. "Full Album" when looking for a track)
+        // Filter Logic
         const cleanTitle = title.toLowerCase();
-        const candidateVideos = videos.filter(v => {
+
+        // Words to avoid unless they are in the original title
+        const negativeWords = ['live', 'concert', 'cover', 'remix', 'karaoke', 'tour'];
+        const allowedNegativeWords = negativeWords.filter(w => cleanTitle.includes(w));
+        const bannedWords = negativeWords.filter(w => !allowedNegativeWords.includes(w));
+
+        const candidates = videos.filter(v => {
             const vTitle = v.title.toLowerCase();
-            // Basic check: Video title should contain the song title
-            return vTitle.includes(cleanTitle);
+
+            // Must contain song title (loose check)
+            if (!vTitle.includes(cleanTitle)) return false;
+
+            // Check for banned words
+            if (bannedWords.some(w => vTitle.includes(w))) return false;
+
+            return true;
         });
 
-        // Use filtered list if we have candidates, otherwise fallback to all
-        const searchPool = candidateVideos.length > 0 ? candidateVideos : videos;
+        const searchPool = candidates.length > 0 ? candidates : videos;
 
-        // If we have a target duration, try to find a video that matches it closely
         if (targetDuration > 0) {
-            const tolerance = 5; // +/- 5 seconds
-            const durationMatch = searchPool.find(v => {
-                const diff = Math.abs(v.duration.seconds - targetDuration);
-                return diff <= tolerance;
-            });
-
-            if (durationMatch) {
-                bestMatch = durationMatch;
+            // Tier 1: Exact duration match (+/- 5s)
+            const exactMatch = searchPool.find(v => Math.abs(v.duration.seconds - targetDuration) <= 5);
+            if (exactMatch) {
+                bestMatch = exactMatch;
             } else {
-                // If no exact match, try to find one that is not too far off (e.g. within 15s)
-                // Tightened from 30s to 15s to avoid wrong versions
-                const closeMatch = searchPool.find(v => {
-                    const diff = Math.abs(v.duration.seconds - targetDuration);
-                    return diff <= 15;
-                });
+                // Tier 2: Close duration match (+/- 15s)
+                const closeMatch = searchPool.find(v => Math.abs(v.duration.seconds - targetDuration) <= 15);
                 if (closeMatch) {
                     bestMatch = closeMatch;
+                } else if (candidates.length > 0) {
+                    // Tier 3: Best filtered match
+                    bestMatch = candidates[0];
                 }
             }
-        } else {
-            // If no duration provided, just take the first one from the filtered pool
-            bestMatch = searchPool[0];
+        } else if (candidates.length > 0) {
+            // No duration provided, use best filtered match
+            bestMatch = candidates[0];
         }
 
         return new Response(JSON.stringify({
