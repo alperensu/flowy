@@ -66,6 +66,76 @@ src/
 └── utils/            # Helper functions
 ```
 
+## 🏗️ Architecture
+
+Flowy operates in two distinct modes, sharing the same UI codebase but utilizing different data fetching strategies:
+
+### 1. Web Mode
+-   **Environment**: Standard web browser.
+-   **Data Fetching**: Uses Next.js API Routes (`/api/*`) to act as a proxy, avoiding CORS issues when communicating with external services like Deezer or YouTube.
+-   **Limitations**: Some APIs might be restricted due to browser policies or IP-based rate limiting on the server side.
+
+### 2. Electron Mode (Desktop)
+-   **Environment**: Chromium-based desktop container.
+-   **Data Fetching**: Uses **IPC (Inter-Process Communication)** to offload network requests to the main process.
+-   **Advantages**: Bypasses CORS completely, allows for native system integrations (Global Media Keys, Taskbar controls), and offers better performance for heavy operations.
+
+---
+
+## 🔌 API Documentation
+
+Flowy exposes several internal API endpoints used by the frontend (primarily in Web Mode).
+
+### `GET /api/youtube`
+Searches for a song on YouTube to find the best audio match.
+
+**Parameters:**
+-   `artist` (string): Name of the artist.
+-   `title` (string): Title of the song.
+-   `duration` (number, optional): Target duration in seconds for better matching accuracy.
+
+**Response:**
+```json
+{
+  "videoId": "dQw4w9WgXcQ",
+  "title": "Rick Astley - Never Gonna Give You Up",
+  "duration": 212,
+  "thumbnail": "https://i.ytimg.com/..."
+}
+```
+
+### `GET /api/album`
+Fetches detailed album information from Deezer.
+
+**Parameters:**
+-   `id` (string): The Deezer album ID.
+
+**Response:**
+```json
+{
+  "id": 12345,
+  "title": "Album Title",
+  "cover": "url_to_image",
+  "artist": { "name": "Artist Name" },
+  "tracks": [ ... ]
+}
+```
+
+### `GET /api/proxy`
+*Note: Currently a stub.*
+Intended to proxy requests to external music APIs (like Deezer) for the web version to avoid CORS. In the current development state, the web version often relies on mock data if this endpoint returns empty results.
+
+---
+
+## ⚙️ Configuration
+
+Flowy is designed to work out-of-the-box with minimal configuration.
+
+-   **Environment Variables**: Currently, no `.env` file is strictly required for local development as the app defaults to public APIs or mock data.
+-   **Port**: Defaults to `3000` for web and `3001` for the Electron serving port.
+
+---
+
 ## 🚀 Getting Started
 
 Follow these steps to set up Flowy locally.
