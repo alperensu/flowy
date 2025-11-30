@@ -1,82 +1,127 @@
 # Flowy
 
-Flowy is a modern, high-performance music streaming application inspired by Spotify. It leverages the power of YouTube's vast library to provide an extensive collection of music, wrapped in a sleek, responsive user interface. Built with Next.js and Electron, Flowy offers both a web-based experience and a native desktop application.
+<div align="center">
+  <h3>Modern Music Streaming, Redefined.</h3>
+  <p>A high-performance, ad-free music streaming experience powered by YouTube, built with the latest web technologies.</p>
 
-## Features
+  <p>
+    <a href="#features">Features</a> •
+    <a href="#tech-stack">Tech Stack</a> •
+    <a href="#getting-started">Getting Started</a> •
+    <a href="#project-structure">Structure</a> •
+    <a href="#contributing">Contributing</a>
+  </p>
 
--   **YouTube Integration**: Search and play any song available on YouTube.
--   **Sleek UI**: A premium, dark-themed interface inspired by modern streaming services.
--   **Responsive Design**: Optimized for various screen sizes, ensuring a consistent experience.
--   **Desktop Experience**: Native capabilities via Electron, including system integration.
--   **Custom Player**: Full-featured music player with playback controls, seeking, and volume management.
+  ![Next.js](https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white)
+  ![Electron](https://img.shields.io/badge/Electron-47848F?style=for-the-badge&logo=electron&logoColor=white)
+  ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+  ![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)
+</div>
 
-## Tech Stack
+---
 
--   **Framework**: [Next.js](https://nextjs.org/) (React)
--   **Desktop Runtime**: [Electron](https://www.electronjs.org/)
--   **Styling**: [Tailwind CSS](https://tailwindcss.com/)
--   **Animations**: [Framer Motion](https://www.framer.com/motion/)
--   **Icons**: [Lucide React](https://lucide.dev/)
--   **Media Playback**: [React Player](https://github.com/cookpete/react-player)
--   **Data Fetching**: [yt-search](https://github.com/talmuth/yt-search)
+## 🚀 Overview
 
-## Getting Started
+**Flowy** is a sophisticated music streaming application that bridges the gap between web and desktop experiences. Inspired by industry leaders like Spotify, it offers a premium, dark-themed interface while leveraging the vast library of YouTube to ensure you can find and play any song you desire.
+
+Whether you prefer a browser-based player or a native desktop application with system integration, Flowy delivers a seamless, responsive, and high-quality audio experience.
+
+## ✨ Features
+
+-   **🎵 Infinite Library**: Powered by YouTube, access millions of songs, remixes, and covers instantly.
+-   **🧠 Smart Shuffle**: An intelligent shuffling algorithm that keeps your playlist fresh without repetition.
+-   **🎨 Premium UI/UX**: A sleek, modern interface designed with `Tailwind CSS` and `Framer Motion` for fluid animations and a native app feel.
+-   **🖥️ Cross-Platform**:
+    -   **Web**: Accessible from any modern browser.
+    -   **Desktop**: Native Windows application via Electron with taskbar integration and media keys support.
+-   **⚡ High Performance**: Built on Next.js for optimal rendering and fast transitions.
+-   **🎹 Advanced Player**: Full control over playback with seeking, volume control, loop modes, and queue management.
+
+## 🛠️ Tech Stack
+
+Flowy is built with a cutting-edge stack designed for scalability and performance:
+
+-   **Core Framework**: [Next.js 14](https://nextjs.org/) (React) - Server-side rendering and static generation.
+-   **Desktop Runtime**: [Electron](https://www.electronjs.org/) - Cross-platform desktop application wrapper.
+-   **Styling**: [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework for rapid UI development.
+-   **Animations**: [Framer Motion](https://www.framer.com/motion/) - Production-ready animation library for React.
+-   **Icons**: [Lucide React](https://lucide.dev/) - Beautiful & consistent icons.
+-   **State Management**: React Context API & Hooks.
+-   **Data Fetching**: Custom YouTube scraper integration.
+
+## 📂 Project Structure
+
+Designed for maintainability and scalability:
+
+```
+src/
+├── app/              # Next.js App Router pages and layouts
+├── components/       # Reusable UI components
+│   ├── views/        # Complex page-like views (Search, Home, etc.)
+│   └── ...           # Atoms and molecules (Player, Card, etc.)
+├── context/          # React Context providers (PlayerContext, etc.)
+├── hooks/            # Custom React hooks
+├── lib/              # Utility libraries and API wrappers
+├── services/         # Business logic services (SmartShuffle, etc.)
+└── utils/            # Helper functions
+```
+
+## 🚀 Getting Started
+
+Follow these steps to set up Flowy locally.
 
 ### Prerequisites
 
-Ensure you have [Node.js](https://nodejs.org/) installed on your machine.
+-   **Node.js** (v18 or higher recommended)
+-   **npm** or **yarn**
 
 ### Installation
 
-1.  Clone the repository:
+1.  **Clone the repository**
     ```bash
     git clone https://github.com/alperensu/flowy.git
     cd flowy
     ```
 
-2.  Install dependencies:
+2.  **Install dependencies**
     ```bash
     npm install
-    # or
-    yarn install
-    # or
-    pnpm install
     ```
 
-### Running the App
+### Development
 
-#### Web Development
-To run the application in the browser:
+Flowy can be run in two modes:
 
+#### 🌐 Web Mode
+Run the application in your browser (localhost:3000).
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
-
-#### Electron Development
-To run the application as a desktop app (with hot reloading):
-
+#### 🖥️ Desktop Mode (Electron)
+Run the application as a native desktop window with hot-reloading.
 ```bash
 npm run electron:dev
 ```
 
-This command concurrently runs the Next.js dev server and the Electron main process.
+### Building for Production
 
-## Building for Production
-
-To create a production build of the desktop application:
+To create a distributable desktop application (e.g., `.exe` for Windows):
 
 ```bash
 npm run electron:build
 ```
+The output will be in the `dist/` directory.
 
-The output binaries will be generated in the `dist` directory.
+## 🤝 Contributing
 
-## Contributing
+We welcome contributions!
+1.  Fork the project.
+2.  Create your feature branch (`git checkout -b feature/AmazingFeature`).
+3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+4.  Push to the branch (`git push origin feature/AmazingFeature`).
+5.  Open a Pull Request.
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+## 📄 License
 
-## License
-
-This project is open source and available under the [MIT License](LICENSE).
+Distributed under the MIT License. See `LICENSE` for more information.
