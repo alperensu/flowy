@@ -9,13 +9,13 @@ export const getPlaylists = () => {
     const stored = localStorage.getItem(STORAGE_KEYS.PLAYLISTS);
     let playlists = stored ? JSON.parse(stored) : [];
 
-    // Migration: Assign dynamic covers to existing playlists
+    // Migration: Assign local covers to existing playlists
     let changed = false;
     playlists = playlists.map(p => {
-        // If cover is missing OR it was one of the old local files
-        if (!p.cover_url || p.cover_url.includes('/images/playlist-covers/')) {
-            // Use Picsum with playlist ID as seed for consistent random image
-            p.cover_url = `https://picsum.photos/seed/${p.id}/500/500`;
+        // If cover is missing OR it uses the old dynamic URL
+        if (!p.cover_url || p.cover_url.includes('picsum.photos')) {
+            const randomId = Math.floor(Math.random() * 20) + 1;
+            p.cover_url = `/images/playlist-covers/cover-${randomId}.jpg`;
             changed = true;
         }
         return p;
@@ -31,11 +31,12 @@ export const getPlaylists = () => {
 export const createPlaylist = (name) => {
     const playlists = getPlaylists();
     const id = Date.now().toString();
+    const randomId = Math.floor(Math.random() * 20) + 1;
     const newPlaylist = {
         id,
         name,
         tracks: [],
-        cover_url: `https://picsum.photos/seed/${id}/500/500`
+        cover_url: `/images/playlist-covers/cover-${randomId}.jpg`
     };
     playlists.push(newPlaylist);
     localStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(playlists));

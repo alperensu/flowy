@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# temporary files
+*-player-script.js
+*-watch.html
+
+# binaries
+yt-dlp.exe
+/dist

@@ -174,7 +174,7 @@ const YouTubePlayer = forwardRef(({ url, playing, volume, onProgress, onReady, o
         }
     }));
 
-    return <div ref={wrapperRef} style={{ width: '100%', height: '100%' }} />;
+    return <div ref={wrapperRef} className="w-full h-full" />;
 });
 
 YouTubePlayer.displayName = 'YouTubePlayer';

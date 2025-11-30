@@ -40,12 +40,24 @@ export const searchTracks = async (query) => {
     const data = await fetchFromApi({ q: query, type: 'track' });
     const results = data.data || [];
     if (results.length === 0 && mockSearchResults?.tracks) {
-      return mockSearchResults.tracks.filter(t => t.title.toLowerCase().includes(query.toLowerCase()));
+      const lowerQuery = query.toLowerCase();
+      return mockSearchResults.tracks.filter(t =>
+        t.title.toLowerCase().includes(lowerQuery) ||
+        t.artist?.name?.toLowerCase().includes(lowerQuery)
+      );
     }
     return results;
   } catch (error) {
     console.error("Search error:", error);
-    return mockSearchResults?.tracks || [];
+    // Fallback: return filtered mock data instead of all data
+    if (mockSearchResults?.tracks) {
+      const lowerQuery = query.toLowerCase();
+      return mockSearchResults.tracks.filter(t =>
+        t.title.toLowerCase().includes(lowerQuery) ||
+        t.artist?.name?.toLowerCase().includes(lowerQuery)
+      );
+    }
+    return [];
   }
 };
 
@@ -59,7 +71,10 @@ export const searchArtists = async (query) => {
     return results;
   } catch (error) {
     console.error("Search artists error:", error);
-    return mockSearchResults?.artists || [];
+    if (mockSearchResults?.artists) {
+      return mockSearchResults.artists.filter(a => a.name.toLowerCase().includes(query.toLowerCase()));
+    }
+    return [];
   }
 };
 
@@ -73,7 +88,10 @@ export const searchAlbums = async (query) => {
     return results;
   } catch (error) {
     console.error("Search albums error:", error);
-    return mockSearchResults?.albums || [];
+    if (mockSearchResults?.albums) {
+      return mockSearchResults.albums.filter(a => a.title.toLowerCase().includes(query.toLowerCase()));
+    }
+    return [];
   }
 };
 

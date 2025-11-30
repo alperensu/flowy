@@ -1,6 +1,5 @@
 'use client';
-import { ChevronLeft, ChevronRight, Bell, Search, Menu, Settings } from 'lucide-react';
-import { useDebouncedCallback } from 'use-debounce';
+import { ChevronLeft, ChevronRight, Bell, Menu, Settings } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useMobileMenu } from '@/context/MobileMenuContext';
 import { useNavigation } from '@/context/NavigationContext';
@@ -8,17 +7,10 @@ import { useState } from 'react';
 import SettingsModal from './SettingsModal';
 
 export default function Navbar() {
-    const { navigateTo, searchQuery, setSearchQuery, currentView } = useNavigation();
+    const { navigateTo, currentView } = useNavigation();
     const { t } = useLanguage();
     const { setIsMobileMenuOpen } = useMobileMenu();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
-    const handleSearch = useDebouncedCallback((term) => {
-        setSearchQuery(term);
-        if (currentView !== 'search') {
-            navigateTo('search');
-        }
-    }, 300);
 
     return (
         <>
@@ -37,20 +29,7 @@ export default function Navbar() {
                     </div>
                 </div>
 
-                {currentView === 'search' && (
-                    <div className="relative ml-6 flex-1 max-w-lg group">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <Search size={20} className="text-gray-400 group-focus-within:text-cyan-400 transition" />
-                        </div>
-                        <input
-                            type="text"
-                            className="block w-full pl-12 pr-4 py-3 border border-white/10 rounded-full leading-5 bg-black/40 text-white placeholder-gray-400 focus:outline-none focus:bg-black/60 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 focus:shadow-[0_0_15px_rgba(0,243,255,0.2)] sm:text-sm transition-all duration-300"
-                            placeholder={t.search.placeholder}
-                            defaultValue={searchQuery}
-                            onChange={(e) => handleSearch(e.target.value)}
-                        />
-                    </div>
-                )}
+                <div className="flex-1" />
 
                 <div className="flex items-center gap-4 ml-4">
                     <button

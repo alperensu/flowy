@@ -6,216 +6,148 @@
 
 class SmartShuffleService {
     constructor() {
-        this.seedTrack = null;
-        this.playHistory = [];
-        this.skipHistory = [];
-        this.originalQueue = [];
+        this.queue = [];
+        this.currentIndex = 0;
         this.weights = {
-            tempo: 0.4,   // Highest weight as per request
+            bpm: 0.4,
             key: 0.3,
-            valence: 0.2,
-            genre: 0.1,
-            penalty: 0.5
+            energy: 0.2,
+            genre: 0.1
         };
-        this.diversityPhase = false; // Toggles every 20% of list
     }
 
     /**
-     * Initializes the smart shuffle session.
-     * @param {Object} seedTrack - The track that started the session.
-     * @param {Array} queue - The full list of available tracks.
+     * Initializes and generates a dynamic queue based on the seed track.
+     * @param {Object} seedTrack - The first track user played.
+     * @param {Array} allTracks - All available tracks to sort.
      */
-    init(seedTrack, queue) {
-        this.seedTrack = this.enrichTrackMetadata(seedTrack);
-        this.originalQueue = queue.map(t => this.enrichTrackMetadata(t));
-        this.playHistory = [this.seedTrack.id];
-        this.skipHistory = [];
-        this.diversityPhase = false;
-        console.log("[SmartShuffle] Initialized with seed:", this.seedTrack.title, this.seedTrack);
+    init(seedTrack, allTracks) {
+        console.log("[SmartShuffle] Initializing with seed:", seedTrack.title);
+
+        // 1. Enrich Metadata (Mock if missing)
+        const enrichedSeed = this.enrich(seedTrack);
+        const pool = allTracks
+            .filter(t => t.id !== seedTrack.id)
+            .map(t => this.enrich(t));
+
+        // 2. Generate Dynamic Queue
+        this.queue = [enrichedSeed];
+        let current = enrichedSeed;
+        let remaining = [...pool];
+
+        while (remaining.length > 0) {
+            // Every 5 tracks, apply "Energy Shift" (Variation Rule)
+            const isVariationStep = this.queue.length % 5 === 0;
+
+            // Find best next track
+            let bestMatch = null;
+            let bestScore = -Infinity;
+            let bestIndex = -1;
+
+            remaining.forEach((candidate, index) => {
+                const score = this.calculateScore(current, candidate, isVariationStep);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMatch = candidate;
+                    bestIndex = index;
+                }
+            });
+
+            if (bestMatch) {
+                this.queue.push(bestMatch);
+                current = bestMatch;
+                remaining.splice(bestIndex, 1);
+            } else {
+                break; // Should not happen
+            }
+        }
+
+        this.currentIndex = 0;
+        console.log(`[SmartShuffle] Generated queue of ${this.queue.length} tracks.`);
+        return this.queue;
     }
 
-    /**
-     * Enriches track with pseudo-random metadata if missing.
-     * Uses track ID as seed for consistency.
-     */
-    enrichTrackMetadata(track) {
+    enrich(track) {
         if (track.bpm && track.key) return track;
-
-        // Simple hash function for pseudo-randomness
+        // Pseudo-random generation based on ID
         const hash = (str) => {
             let h = 0;
             for (let i = 0; i < str.length; i++) h = Math.imul(31, h) + str.charCodeAt(i) | 0;
             return h;
         };
+        const seed = hash(track.id.toString() + track.title);
+        let currentSeed = seed;
+        const rand = () => { const x = Math.sin(currentSeed++) * 10000; return x - Math.floor(x); };
 
-        let seed = hash(track.id.toString() + track.title);
-        const rand = () => {
-            const x = Math.sin(seed++) * 10000;
-            return x - Math.floor(x);
-        };
-
-        // Mock Data Generation
         const keys = ["1A", "1B", "2A", "2B", "3A", "3B", "4A", "4B", "5A", "5B", "6A", "6B", "7A", "7B", "8A", "8B", "9A", "9B", "10A", "10B", "11A", "11B", "12A", "12B"];
 
         return {
             ...track,
-            bpm: track.bpm || Math.floor(80 + rand() * 100), // 80-180 BPM
+            bpm: track.bpm || Math.floor(80 + rand() * 100),
             key: track.key || keys[Math.floor(rand() * keys.length)],
-            valence: track.valence || rand(),
             energy: track.energy || rand(),
             genre: track.genre || "Pop"
         };
     }
 
-    /**
-     * Calculates Harmonic Key Distance using Camelot Wheel.
-     * 0 = Perfect Match, 1 = Adjacent (Good), >1 = Dissonant
-     */
-    getKeyDistance(key1, key2) {
-        if (!key1 || !key2) return 10; // Unknown key penalty
-        if (key1 === key2) return 0;
-
-        const parseKey = (k) => {
-            const num = parseInt(k.slice(0, -1));
-            const letter = k.slice(-1);
-            return { num, letter };
-        };
-
-        const k1 = parseKey(key1);
-        const k2 = parseKey(key2);
-
-        // Same letter (A/A or B/B): Check number distance (circular 1-12)
-        if (k1.letter === k2.letter) {
-            const diff = Math.abs(k1.num - k2.num);
-            const dist = diff > 6 ? 12 - diff : diff;
-            return dist;
-        }
-        // Different letter (A/B): Only compatible if number is same (Relative Minor/Major)
-        else {
-            if (k1.num === k2.num) return 1; // Relative key (e.g. 8A -> 8B)
-            return 10; // Incompatible
-        }
-    }
-
-    /**
-     * Calculates the Cohesion Score between the current track and a candidate track.
-     */
-    calculateCohesionScore(currentTrack, candidate) {
+    calculateScore(current, candidate, isVariation) {
         let score = 0;
 
-        // 1. Tempo Match (Inverse of diff)
-        const bpmDiff = Math.abs(currentTrack.bpm - candidate.bpm);
-        let tempoScore = 0;
-        if (bpmDiff <= 15) {
-            tempoScore = 1.0 - (bpmDiff / 15); // Linear decay 1.0 -> 0.0
+        // 1. BPM Proximity (Target: ±15)
+        const bpmDiff = Math.abs(current.bpm - candidate.bpm);
+        if (bpmDiff <= 15) score += this.weights.bpm * (1 - bpmDiff / 15);
+        else score -= (bpmDiff / 50); // Penalty for huge jumps
+
+        // 2. Key Compatibility (Camelot)
+        const keyDist = this.getKeyDistance(current.key, candidate.key);
+        if (keyDist === 0) score += this.weights.key; // Perfect
+        else if (keyDist === 1) score += this.weights.key * 0.8; // Adjacent
+        else score -= this.weights.key * keyDist * 0.5; // Dissonant
+
+        // 3. Energy Flow
+        const energyDiff = candidate.energy - current.energy;
+        if (isVariation) {
+            // Variation: Prefer slight change (±0.2 to ±0.4)
+            if (Math.abs(energyDiff) >= 0.2 && Math.abs(energyDiff) <= 0.4) score += 0.5;
         } else {
-            tempoScore = -0.5; // Penalty for large jumps
-        }
-        score += tempoScore * this.weights.tempo;
-
-        // 2. Key Match (Harmonic Mixing)
-        const keyDist = this.getKeyDistance(currentTrack.key, candidate.key);
-        let keyScore = 0;
-        if (keyDist === 0) keyScore = 1.0; // Same key
-        else if (keyDist === 1) keyScore = 0.8; // Adjacent/Relative
-        else keyScore = -0.2 * keyDist; // Penalty for dissonance
-        score += keyScore * this.weights.key;
-
-        // 3. Genre Match
-        if (currentTrack.genre === candidate.genre) {
-            score += 1.0 * this.weights.genre;
+            // Continuity: Prefer similar energy
+            score += this.weights.energy * (1 - Math.abs(energyDiff));
         }
 
-        // 4. Diversity/Energy Shift Rule
-        // If in diversity phase, we WANT a shift in energy/valence
-        if (this.diversityPhase) {
-            const energyDiff = Math.abs(currentTrack.energy - candidate.energy);
-            if (energyDiff >= 0.1 && energyDiff <= 0.3) {
-                score += 0.3; // Bonus for slight shift
-            }
-        } else {
-            // Otherwise prefer continuity
-            const energyDiff = Math.abs(currentTrack.energy - candidate.energy);
-            score += (1.0 - energyDiff) * this.weights.valence;
-        }
-
-        // 5. Repetition Penalty
-        // Check if artist was played recently (last 5 tracks)
-        const last5Ids = this.playHistory.slice(-5);
-        // We need to look up tracks. Since we only store IDs in history, we scan originalQueue
-        const recentTracks = this.originalQueue.filter(t => last5Ids.includes(t.id));
-        if (recentTracks.some(t => t.artist.name === candidate.artist.name)) {
-            score -= this.weights.penalty;
-        }
+        // 4. Genre Match
+        if (current.genre === candidate.genre) score += this.weights.genre;
 
         return score;
     }
 
-    /**
-     * Selects the next track based on the current track and history.
-     */
-    getNextTrack(currentTrack) {
-        if (!this.originalQueue.length) return null;
+    getKeyDistance(k1, k2) {
+        if (!k1 || !k2) return 10;
+        if (k1 === k2) return 0;
+        const p1 = { n: parseInt(k1), l: k1.slice(-1) };
+        const p2 = { n: parseInt(k2), l: k2.slice(-1) };
 
-        // Enrich current track if needed (e.g. if passed from outside without metadata)
-        const enrichedCurrent = this.enrichTrackMetadata(currentTrack);
-
-        // Update Diversity Phase
-        // Every 5 tracks (~20 mins), toggle diversity phase for 1 track
-        if (this.playHistory.length % 5 === 0) {
-            this.diversityPhase = true;
-            console.log("[SmartShuffle] Diversity Phase Active: Seeking energy shift.");
+        if (p1.l === p2.l) {
+            const diff = Math.abs(p1.n - p2.n);
+            return diff > 6 ? 12 - diff : diff;
         } else {
-            this.diversityPhase = false;
+            return p1.n === p2.n ? 1 : 10;
         }
-
-        // Filter candidates
-        let candidates = this.originalQueue.filter(track => {
-            // Exclude already played
-            if (this.playHistory.includes(track.id)) return false;
-            // Exclude skipped tracks
-            if (this.skipHistory.includes(track.id)) return false;
-            return true;
-        });
-
-        // If ran out, reset history (loop)
-        if (candidates.length === 0) {
-            console.log("[SmartShuffle] Queue exhausted. Resetting history.");
-            this.playHistory = [];
-            candidates = this.originalQueue;
-        }
-
-        // Score candidates
-        const scoredCandidates = candidates.map(track => ({
-            track,
-            score: this.calculateCohesionScore(enrichedCurrent, track)
-        }));
-
-        // Sort by score descending
-        scoredCandidates.sort((a, b) => b.score - a.score);
-
-        // Select top candidate
-        const selected = scoredCandidates[0].track;
-
-        // Bridge Logic: If best match still has huge BPM gap (>30), try to find a bridge?
-        // For now, we just pick the best available. The scoring penalizes gaps, so it naturally avoids them if possible.
-
-        // Record selection
-        this.playHistory.push(selected.id);
-
-        console.log(`[SmartShuffle] Selected: ${selected.title} (Score: ${scoredCandidates[0].score.toFixed(2)})`);
-        console.log(`[SmartShuffle] Transition: ${enrichedCurrent.bpm} -> ${selected.bpm} BPM | ${enrichedCurrent.key} -> ${selected.key}`);
-
-        return selected;
     }
 
-    /**
-     * Handles a user skip action.
-     */
-    handleSkip(track) {
-        console.log("[SmartShuffle] User skipped:", track.title);
-        this.skipHistory.push(track.id);
-        // In future: could adjust weights dynamically here
+    getNextTrack() {
+        if (this.currentIndex < this.queue.length - 1) {
+            this.currentIndex++;
+            return this.queue[this.currentIndex];
+        }
+        return null; // End of queue
+    }
+
+    getPrevTrack() {
+        if (this.currentIndex > 0) {
+            this.currentIndex--;
+            return this.queue[this.currentIndex];
+        }
+        return null;
     }
 }
 

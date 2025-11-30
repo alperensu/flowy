@@ -6,34 +6,9 @@ const SettingsContext = createContext();
 export function SettingsProvider({ children }) {
     // Default Settings
     const [settings, setSettings] = useState({
-        explicitContent: true,
-        autoplay: true,
-        audioQuality: 'auto', // auto, low, normal, high, very_high
-        downloadQuality: 'high',
-        autoAdjustQuality: true,
-        normalizeVolume: true,
-        volumeLevel: 'normal', // quiet, normal, loud
-        monoAudio: false,
         equalizerEnabled: false,
         equalizerPreset: 'flat',
         equalizerBands: { 60: 0, 150: 0, 400: 0, 1000: 0, 2400: 0, 6000: 0, 16000: 0 },
-        crossfade: 0, // seconds
-        automix: true,
-        showNowPlayingView: true,
-        showCanvas: true,
-        showAnnouncements: true,
-        showDesktopOverlay: true,
-        seeFriendsActivity: true,
-        privateSession: false,
-        shareActivity: true,
-        compactLibrary: false,
-        showLocalFiles: false,
-        zoomLevel: 100,
-        layout: 'default', // compact, default, wide
-        hardwareAcceleration: true,
-        proxyType: 'none',
-        startupBehavior: 'minimized',
-        closeButtonBehavior: 'minimize',
         lowPerformanceMode: false,
         theme: 'dark'
     });
@@ -94,33 +69,10 @@ export function SettingsProvider({ children }) {
 
     const resetSettings = () => {
         setSettings({
-            explicitContent: true,
-            autoplay: true,
-            audioQuality: 'auto',
-            downloadQuality: 'high',
-            autoAdjustQuality: true,
-            normalizeVolume: true,
-            volumeLevel: 'normal',
-            monoAudio: false,
             equalizerEnabled: false,
             equalizerPreset: 'flat',
-            crossfade: 0,
-            automix: true,
-            showNowPlayingView: true,
-            showCanvas: true,
-            showAnnouncements: true,
-            showDesktopOverlay: true,
-            seeFriendsActivity: true,
-            privateSession: false,
-            shareActivity: true,
-            compactLibrary: false,
-            showLocalFiles: false,
-            zoomLevel: 100,
-            layout: 'default',
-            hardwareAcceleration: true,
-            proxyType: 'none',
-            startupBehavior: 'minimized',
-            closeButtonBehavior: 'minimize'
+            lowPerformanceMode: false,
+            theme: 'dark'
         });
     };
 

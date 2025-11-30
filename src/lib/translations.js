@@ -125,7 +125,42 @@ export const translations = {
             error: "Could not fetch lyrics.",
             noTrack: "No Track",
             unknownArtist: "Unknown Artist",
-        }
+        },
+        searchView: {
+            topResult: "Top Result",
+            artists: "Artists",
+            songs: "Songs",
+            placeholder: "What do you want to listen to?",
+            initialState: "Search for artists, songs, or podcasts",
+            song: "Song",
+            artist: "Artist"
+        },
+        modals: {
+            createPlaylist: "Create Playlist",
+            enterPlaylistName: "Enter a name for your new playlist:",
+            playlistPlaceholder: "My Awesome Playlist",
+            create: "Create",
+            duplicateTitle: "Duplicate Songs",
+            duplicateMessage: "songs are already in this playlist.",
+            duplicateSingleMessage: "is already in this playlist.",
+            addAnyway: "Add Anyway",
+            cancel: "Cancel"
+        },
+        toasts: {
+            playlistCreated: "Playlist created!",
+            addedToLiked: "Added to Liked Songs",
+            alreadyInLiked: "Song already in Liked Songs",
+            allInLiked: "All songs already in Liked Songs",
+            addedToPlaylist: "songs added to",
+            noSongsToCopy: "No songs to copy"
+        },
+        player: {
+            playing: "Now Playing",
+            welcome: {
+                title: "Welcome to Flowy",
+                subtitle: "Select a song to start listening"
+            }
+        },
     },
     tr: {
         greeting: {
@@ -253,7 +288,42 @@ export const translations = {
             error: "Şarkı sözleri alınamadı.",
             noTrack: "Şarkı Yok",
             unknownArtist: "Bilinmeyen Sanatçı",
-        }
+        },
+        searchView: {
+            topResult: "En İyi Sonuç",
+            artists: "Sanatçılar",
+            songs: "Şarkılar",
+            placeholder: "Ne dinlemek istiyorsun?",
+            initialState: "Sanatçı, şarkı veya podcast ara",
+            song: "Şarkı",
+            artist: "Sanatçı"
+        },
+        modals: {
+            createPlaylist: "Çalma Listesi Oluştur",
+            enterPlaylistName: "Yeni çalma listen için bir isim gir:",
+            playlistPlaceholder: "Harika Listem",
+            create: "Oluştur",
+            duplicateTitle: "Tekrarlanan Şarkılar",
+            duplicateMessage: "şarkı zaten bu listede var.",
+            duplicateSingleMessage: "zaten bu listede var.",
+            addAnyway: "Yine de Ekle",
+            cancel: "İptal"
+        },
+        toasts: {
+            playlistCreated: "Çalma listesi oluşturuldu!",
+            addedToLiked: "Beğenilen Şarkılara eklendi",
+            alreadyInLiked: "Şarkı zaten Beğenilenlerde",
+            allInLiked: "Tüm şarkılar zaten Beğenilenlerde",
+            addedToPlaylist: "şarkı şuraya eklendi:",
+            noSongsToCopy: "Kopyalanacak şarkı yok"
+        },
+        player: {
+            playing: "Şu An Çalıyor",
+            welcome: {
+                title: "Flowy'ye Hoş Geldin",
+                subtitle: "Dinlemeye başlamak için bir şarkı seç"
+            }
+        },
     },
     es: {
         greeting: {

@@ -108,16 +108,16 @@ export default function Sidebar() {
 
     const handleCreatePlaylist = async () => {
         const name = await showModal('PROMPT', {
-            title: t.sidebar.createPlaylist || "Create Playlist",
-            message: "Enter a name for your new playlist:",
-            placeholder: "My Awesome Playlist",
-            confirmText: "Create"
+            title: t.modals?.createPlaylist || "Create Playlist",
+            message: t.modals?.enterPlaylistName || "Enter a name for your new playlist:",
+            placeholder: t.modals?.playlistPlaceholder || "My Awesome Playlist",
+            confirmText: t.modals?.create || "Create"
         });
 
         if (name) {
             const { createPlaylist } = require('@/lib/store');
             createPlaylist(name);
-            addToast(`Playlist "${name}" created!`, 'success');
+            addToast(t.toasts?.playlistCreated || `Playlist "${name}" created!`, 'success');
         }
     };
 
@@ -252,9 +252,9 @@ export default function Sidebar() {
                                     if (data.type === 'track') {
                                         if (!isLiked(data.data.id)) {
                                             toggleLike(data.data);
-                                            addToast(`${t.sidebar.songs} added to Liked Songs`, 'success');
+                                            addToast(t.toasts?.addedToLiked || `${t.sidebar.songs} added to Liked Songs`, 'success');
                                         } else {
-                                            addToast('Song already in Liked Songs', 'info');
+                                            addToast(t.toasts?.alreadyInLiked || 'Song already in Liked Songs', 'info');
                                         }
                                     } else if (data.type === 'album') {
                                         if (data.data.tracks) {
@@ -266,9 +266,9 @@ export default function Sidebar() {
                                                 }
                                             });
                                             if (addedCount > 0) {
-                                                addToast(`${addedCount} songs added to Liked Songs`, 'success');
+                                                addToast(`${addedCount} ${t.toasts?.addedToLiked || "songs added to Liked Songs"}`, 'success');
                                             } else {
-                                                addToast('All songs already in Liked Songs', 'info');
+                                                addToast(t.toasts?.allInLiked || 'All songs already in Liked Songs', 'info');
                                             }
                                         }
                                     }
@@ -314,21 +314,21 @@ export default function Sidebar() {
 
                                             if (duplicates.length > 0) {
                                                 const message = duplicates.length === 1
-                                                    ? `"${duplicates[0].title}" is already in this playlist.`
-                                                    : `${duplicates.length} songs are already in this playlist.`;
+                                                    ? `"${duplicates[0].title}" ${t.modals?.duplicateSingleMessage || "is already in this playlist."}`
+                                                    : `${duplicates.length} ${t.modals?.duplicateMessage || "songs are already in this playlist."}`;
 
                                                 const confirmed = await showModal('CONFIRM', {
-                                                    title: "Duplicate Songs",
-                                                    message: `${message} Do you want to add them anyway?`,
-                                                    confirmText: "Add Anyway",
-                                                    cancelText: "Cancel"
+                                                    title: t.modals?.duplicateTitle || "Duplicate Songs",
+                                                    message: `${message} ${t.modals?.addAnyway || "Do you want to add them anyway?"}`,
+                                                    confirmText: t.modals?.addAnyway || "Add Anyway",
+                                                    cancelText: t.modals?.cancel || "Cancel"
                                                 });
 
                                                 if (!confirmed) return;
                                             }
 
                                             tracksToAdd.forEach(t => addToPlaylist(playlist.id, t));
-                                            addToast(`${tracksToAdd.length} songs added to ${playlist.name}`, 'success');
+                                            addToast(`${tracksToAdd.length} ${t.toasts?.addedToPlaylist || "songs added to"} ${playlist.name}`, 'success');
                                         };
 
                                         if (data.type === 'track') {
@@ -337,7 +337,7 @@ export default function Sidebar() {
                                             if (data.data.tracks && data.data.tracks.length > 0) {
                                                 handleAdd(data.data.tracks);
                                             } else {
-                                                addToast('No songs to copy', 'info');
+                                                addToast(t.toasts?.noSongsToCopy || 'No songs to copy', 'info');
                                             }
                                         }
                                     } catch (err) {

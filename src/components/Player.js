@@ -6,6 +6,7 @@ import { useNavigation } from '@/context/NavigationContext';
 import { useSettings } from '@/context/SettingsContext';
 import { useRecommendation } from '@/context/RecommendationContext';
 import { useContextMenu } from '@/context/ContextMenuContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { toggleLike, isLiked, addToHistory, getPlaylists, createPlaylist, addToPlaylist } from '@/lib/store';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
@@ -31,6 +32,7 @@ export default function Player() {
     const { openMenu } = useContextMenu();
     const { navigateTo } = useNavigation();
     const { settings } = useSettings();
+    const { t } = useLanguage();
 
     const [liked, setLiked] = useState(false);
     const [isLyricsOpen, setIsLyricsOpen] = useState(false);
@@ -259,8 +261,8 @@ export default function Player() {
 
     // Placeholder data for initial state
     const displayTrack = currentTrack || {
-        title: "Welcome to Flowy",
-        artist: "Select a song to start listening",
+        title: t.player?.welcome?.title || "Welcome to Flowy",
+        artist: t.player?.welcome?.subtitle || "Select a song to start listening",
         album: { cover_small: null }
     };
 

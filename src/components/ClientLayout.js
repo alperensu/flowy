@@ -12,6 +12,7 @@ const ToastContainer = dynamic(() => import("@/components/ui/ToastContainer"), {
 const GlobalModal = dynamic(() => import("@/components/ui/GlobalModal"), { ssr: false });
 const HomeView = dynamic(() => import("@/components/views/HomeView"), { ssr: false });
 const SearchView = dynamic(() => import("@/components/views/SearchView"), { ssr: false });
+const LyricsModal = dynamic(() => import("@/components/LyricsModal"), { ssr: false });
 const LibraryView = dynamic(() => import("@/components/views/LibraryView"), { ssr: false });
 const PlaylistView = dynamic(() => import("@/components/views/PlaylistView"), { ssr: false });
 const ArtistView = dynamic(() => import("@/components/views/ArtistView"), { ssr: false });
@@ -64,6 +65,11 @@ function FullScreenPlayerWrapper() {
     return <FullScreenPlayer isOpen={isFullScreenPlayerOpen} onClose={toggleFullScreenPlayer} />;
 }
 
+function LyricsModalWrapper() {
+    const { isLyricsOpen, toggleLyrics } = usePlayer();
+    return <LyricsModal isOpen={isLyricsOpen} onClose={toggleLyrics} />;
+}
+
 function ThemeApplicator() {
     const { settings } = useSettings();
     useEffect(() => {
@@ -109,6 +115,7 @@ export default function ClientLayout({ children }) {
                                                     <Player />
                                                     <QueueSidebar />
                                                     <FullScreenPlayerWrapper />
+                                                    <LyricsModalWrapper />
                                                     <ContextMenu />
                                                     <ToastContainer />
                                                     <GlobalModal />

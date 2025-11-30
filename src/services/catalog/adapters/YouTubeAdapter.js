@@ -8,9 +8,28 @@ export class YouTubeAdapter extends CatalogAdapter {
 
     async search(query) {
         try {
-            const r = await yts(query + " audio");
+            // Improved query
+            const r = await yts(query + " Official Audio");
             const videos = r.videos || [];
-            return videos.map(v => this.normalize(v));
+
+            // Filter Logic (Same as route.js)
+            const cleanQuery = query.toLowerCase();
+            const negativeWords = ['live', 'concert', 'tour', 'cover', 'remix', 'karaoke', 'instrumental', 'performed by'];
+            // Only ban negative words if the query itself doesn't contain them
+            const bannedWords = negativeWords.filter(w => !cleanQuery.includes(w));
+
+            const filtered = videos.filter(v => {
+                const vTitle = v.title.toLowerCase();
+                // Must not contain banned words
+                if (bannedWords.some(w => vTitle.includes(w))) return false;
+                return true;
+            });
+
+            // Fallback: If strict filtering removes everything, DO NOT use original videos.
+            // This ensures we don't play random live versions.
+            const results = filtered;
+
+            return results.map(v => this.normalize(v));
         } catch (error) {
             console.error('YouTubeAdapter Search Error:', error);
             return [];

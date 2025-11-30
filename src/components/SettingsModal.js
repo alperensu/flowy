@@ -75,9 +75,7 @@ export default function SettingsModal({ isOpen, onClose }) {
     const categories = [
         { id: 'appearance', label: 'Görünüm', icon: Palette },
         { id: 'playback', label: t.settings.playback, icon: PlayCircle },
-        { id: 'display', label: t.settings.display, icon: Monitor },
         { id: 'language', label: t.settings.language, icon: Globe },
-        { id: 'storage', label: t.settings.storage, icon: HardDrive },
         { id: 'compatibility', label: t.settings.compatibility, icon: Cpu },
     ];
 
@@ -218,54 +216,6 @@ export default function SettingsModal({ isOpen, onClose }) {
                             {activeCategory === 'playback' && (
                                 <Section>
                                     <div className="flex flex-col gap-2">
-                                        <SettingRow
-                                            label={t.settings.crossfade}
-                                            description="Fade songs into each other"
-                                            control={<Toggle checked={settings.crossfade > 0} onChange={(v) => updateSetting('crossfade', v ? 5 : 0)} />}
-                                        />
-                                        {settings.crossfade > 0 && (
-                                            <div className="mb-4 px-4 bg-white/5 p-4 rounded-lg">
-                                                <div className="flex justify-between text-xs text-gray-400 mb-2">
-                                                    <span>0s</span>
-                                                    <span className="text-white font-bold">{settings.crossfade}s</span>
-                                                    <span>12s</span>
-                                                </div>
-                                                <input type="range" min="0" max="12" value={settings.crossfade} onChange={(e) => updateSetting('crossfade', parseInt(e.target.value))} className="w-full accent-green-500 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer" />
-                                            </div>
-                                        )}
-                                        <SettingRow
-                                            label={t.settings.automix}
-                                            description="Allow seamless transitions between songs"
-                                            control={<Toggle checked={settings.automix} onChange={(v) => updateSetting('automix', v)} />}
-                                        />
-                                        <SettingRow
-                                            label={t.settings.normalizeVolume}
-                                            description="Set the same volume level for all songs"
-                                            control={<Toggle checked={settings.normalizeVolume} onChange={(v) => updateSetting('normalizeVolume', v)} />}
-                                        />
-                                        <SettingRow
-                                            label={t.settings.volumeLevel}
-                                            control={<Dropdown value={settings.volumeLevel} options={volumeOptions} onChange={(v) => updateSetting('volumeLevel', v)} />}
-                                        />
-                                        <SettingRow
-                                            label={t.settings.monoAudio}
-                                            description="Make left and right speakers play the same audio"
-                                            control={<Toggle checked={settings.monoAudio} onChange={(v) => {
-                                                updateSetting('monoAudio', v);
-                                                if (v) addToast("Mono audio may not work with YouTube streams due to browser restrictions.", "info");
-                                            }} />}
-                                        />
-                                        <SettingRow
-                                            label={t.settings.autoplay}
-                                            description={t.settings.autoplayDescription}
-                                            control={<Toggle checked={settings.autoplay} onChange={(v) => updateSetting('autoplay', v)} />}
-                                        />
-                                        <SettingRow
-                                            label={t.settings.allowExplicit}
-                                            description={t.settings.explicitDescription}
-                                            control={<Toggle checked={settings.explicitContent} onChange={(v) => updateSetting('explicitContent', v)} />}
-                                        />
-
                                         <div className="mt-6 bg-white/5 rounded-xl p-1 border border-white/5">
                                             <div className="flex items-center justify-between p-4">
                                                 <div className="flex items-center gap-3">
@@ -292,98 +242,8 @@ export default function SettingsModal({ isOpen, onClose }) {
                                 </Section>
                             )}
 
-                            {activeCategory === 'display' && (
-                                <Section>
-                                    <SettingRow
-                                        label={t.settings.showNowPlaying}
-                                        control={<Toggle checked={settings.showNowPlayingView} onChange={(v) => updateSetting('showNowPlayingView', v)} />}
-                                    />
-                                    <SettingRow
-                                        label={t.settings.showCanvas}
-                                        description="Show short looping visuals on tracks"
-                                        control={<Toggle checked={settings.showCanvas} onChange={(v) => updateSetting('showCanvas', v)} />}
-                                    />
-                                    <SettingRow
-                                        label={t.settings.showAnnouncements}
-                                        control={<Toggle checked={settings.showAnnouncements} onChange={(v) => updateSetting('showAnnouncements', v)} />}
-                                    />
-                                    <SettingRow
-                                        label={t.settings.showDesktopOverlay}
-                                        control={<Toggle checked={settings.showDesktopOverlay} onChange={(v) => updateSetting('showDesktopOverlay', v)} />}
-                                    />
-                                    <SettingRow
-                                        label={t.settings.compactLibrary}
-                                        control={<Toggle checked={settings.compactLibrary} onChange={(v) => updateSetting('compactLibrary', v)} />}
-                                    />
-                                    <SettingRow
-                                        label={t.settings.showLocalFiles}
-                                        control={<Toggle checked={settings.showLocalFiles} onChange={(v) => updateSetting('showLocalFiles', v)} />}
-                                    />
-                                    <div className="mt-4">
-                                        <h4 className="text-white font-medium mb-3">{t.settings.audioQuality}</h4>
-                                        <div className="bg-white/5 rounded-xl p-4 flex flex-col gap-2">
-                                            <SettingRow
-                                                label={t.settings.streamingQuality}
-                                                control={<Dropdown value={settings.audioQuality} options={qualityOptions} onChange={(v) => updateSetting('audioQuality', v)} />}
-                                            />
-                                            <SettingRow
-                                                label={t.settings.download}
-                                                control={<Dropdown value={settings.downloadQuality} options={qualityOptions} onChange={(v) => updateSetting('downloadQuality', v)} />}
-                                            />
-                                            <SettingRow
-                                                label={t.settings.autoAdjustQuality}
-                                                control={<Toggle checked={settings.autoAdjustQuality} onChange={(v) => updateSetting('autoAdjustQuality', v)} />}
-                                            />
-                                        </div>
-                                    </div>
-                                </Section>
-                            )}
-
-                            {activeCategory === 'storage' && (
-                                <Section>
-                                    <div className="bg-white/5 rounded-xl p-6 flex flex-col items-center text-center border border-white/5">
-                                        <HardDrive size={48} className="text-gray-500 mb-4" />
-                                        <h4 className="text-white font-bold text-lg mb-1">Cache Storage</h4>
-                                        <p className="text-gray-400 text-sm mb-6">Clear your cache to free up space. This will not delete your downloads.</p>
-
-                                        <div className="w-full bg-gray-800 h-4 rounded-full overflow-hidden mb-2 relative">
-                                            <div className="absolute left-0 top-0 h-full bg-cyan-500 w-[30%]" />
-                                            <div className="absolute left-[30%] top-0 h-full bg-gray-600 w-[10%]" />
-                                        </div>
-                                        <div className="flex justify-between w-full text-xs text-gray-400 mb-6">
-                                            <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-cyan-500" /> Cache (163 MB)</div>
-                                            <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-gray-600" /> Other</div>
-                                            <div>Free: 45 GB</div>
-                                        </div>
-
-                                        <button
-                                            onClick={async () => {
-                                                const confirmed = await showModal('CONFIRM', {
-                                                    title: t.settings.clearCache || "Clear Cache",
-                                                    message: "Are you sure you want to clear the cache? This will reload the application.",
-                                                    confirmText: "Clear & Reload",
-                                                    isDestructive: true
-                                                });
-
-                                                if (confirmed) {
-                                                    localStorage.clear();
-                                                    window.location.reload();
-                                                }
-                                            }}
-                                            className="bg-white text-black px-6 py-2 rounded-full font-bold text-sm hover:scale-105 transition"
-                                        >
-                                            {t.settings.clearCache}
-                                        </button>
-                                    </div>
-                                </Section>
-                            )}
-
                             {activeCategory === 'compatibility' && (
                                 <Section>
-                                    <SettingRow
-                                        label={t.settings.hardwareAcceleration}
-                                        control={<Toggle checked={settings.hardwareAcceleration} onChange={(v) => updateSetting('hardwareAcceleration', v)} />}
-                                    />
                                     <SettingRow
                                         label="Düşük Performans Modu (Low Performance Mode)"
                                         description="Sistem kaynaklarını daha az kullanmak için görsel efektleri kapatır."

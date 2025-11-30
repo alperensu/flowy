@@ -14,6 +14,7 @@ export function PlayerProvider({ children }) {
     const [isSmartShuffle, setIsSmartShuffle] = useState(false); // New Smart Shuffle State
     const [originalQueue, setOriginalQueue] = useState([]);
     const [isQueueOpen, setIsQueueOpen] = useState(false);
+    const [isLyricsOpen, setIsLyricsOpen] = useState(false);
     const [isFullScreenPlayerOpen, setIsFullScreenPlayerOpen] = useState(false);
 
     const [sessionHistory, setSessionHistory] = useState([]);
@@ -272,6 +273,8 @@ export function PlayerProvider({ children }) {
         reorderQueue: setQueue,
         isQueueOpen,
         toggleQueue: () => setIsQueueOpen(prev => !prev),
+        isLyricsOpen, // New Lyrics State
+        toggleLyrics: () => setIsLyricsOpen(prev => !prev),
         isFullScreenPlayerOpen,
         toggleFullScreenPlayer: () => setIsFullScreenPlayerOpen(prev => !prev),
         currentTime,
@@ -285,7 +288,7 @@ export function PlayerProvider({ children }) {
         currentContextId, // Expose context ID
         hasPlayedOnce, // Expose hasPlayedOnce
         autoPlayRef // Expose autoPlayRef for Player component
-    }), [currentTrack, isPlaying, repeatMode, queue, isShuffled, isSmartShuffle, isQueueOpen, isFullScreenPlayerOpen, originalQueue, sessionHistory, currentTime, duration, playerRef, currentContextId, hasPlayedOnce]);
+    }), [currentTrack, isPlaying, repeatMode, queue, isShuffled, isSmartShuffle, isQueueOpen, isLyricsOpen, isFullScreenPlayerOpen, originalQueue, sessionHistory, currentTime, duration, playerRef, currentContextId, hasPlayedOnce]);
 
     return (
         <PlayerContext.Provider value={value}>

@@ -60,10 +60,10 @@ const TrackRow = memo(({
                 </div>
                 <div className="flex flex-col overflow-hidden">
                     <span className={`truncate font-medium ${isCurrent ? 'text-green-500' : 'text-white'}`}>{track.title}</span>
-                    <span className="truncate text-sm text-gray-400 group-hover:text-white transition">{track.artist.name}</span>
+                    <span className="truncate text-sm text-gray-400 group-hover:text-white transition">{track.artist?.name || (typeof track.artist === 'string' ? track.artist : 'Unknown Artist')}</span>
                 </div>
             </div>
-            <span className="text-sm text-gray-400 group-hover:text-white transition truncate">{track.album.title}</span>
+            <span className="text-sm text-gray-400 group-hover:text-white transition truncate">{track.album?.title || "Unknown Album"}</span>
             <span className="text-sm text-gray-400 group-hover:text-white transition">2 days ago</span>
             <div className="flex justify-end pr-8 text-sm text-gray-400 group-hover:text-white transition">
                 {formatDuration(track.duration)}

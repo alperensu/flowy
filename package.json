@@ -1,6 +1,6 @@
 {
   "name": "flowy",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "main": "electron/main.js",
   "scripts": {
@@ -13,6 +13,7 @@
     "electron:build": "next build && electron-builder"
   },
   "dependencies": {
+    "@distube/ytdl-core": "^4.16.12",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.555.0",

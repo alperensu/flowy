@@ -1,248 +1,208 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { searchTracks, searchArtists, searchAlbums } from '@/lib/api';
-import AlbumCard from '@/components/AlbumCard';
-import { getSearchHistory, addSearchHistory, clearSearchHistory, getVisitedTracks, clearVisitedTracks } from '@/lib/store';
-import { Clock, Trash2, Play, Pause, Heart } from 'lucide-react';
-import { useLanguage } from '@/context/LanguageContext';
-import { useNavigation } from '@/context/NavigationContext';
-import { usePlayer } from '@/context/PlayerContext';
+
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, Play, Pause, Heart, Clock, Disc, Mic2, User, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
-import { useContextMenu } from '@/context/ContextMenuContext';
-import VirtualizedList from '@/components/ui/VirtualizedList';
-
-
-import { useDrag } from '@/context/DragContext';
+import { usePlayer } from '@/context/PlayerContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function SearchView() {
-    const { searchQuery, navigateTo } = useNavigation();
-    const { currentTrack, isPlaying, togglePlay, playTrack } = usePlayer();
-    const { openMenu } = useContextMenu();
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isFocused, setIsFocused] = useState(false);
+    const searchTimeout = useRef(null);
+    const inputRef = useRef(null);
+
+    const { playTrack, currentTrack, isPlaying, togglePlay } = usePlayer();
     const { t } = useLanguage();
-    const { startDrag, endDrag } = useDrag();
 
-    const [tracks, setTracks] = useState([]);
-    const [artists, setArtists] = useState([]);
-    const [albums, setAlbums] = useState([]);
-    const [filter, setFilter] = useState('all');
-    const [topResult, setTopResult] = useState(null);
-
+    // Debounced Search
     useEffect(() => {
-        if (!searchQuery) return;
+        if (searchTimeout.current) clearTimeout(searchTimeout.current);
 
-        const performSearch = async () => {
-            try {
-                const [trackResults, artistResults, albumResults] = await Promise.all([
-                    searchTracks(searchQuery),
-                    searchArtists(searchQuery),
-                    searchAlbums(searchQuery)
-                ]);
-
-                setTracks(trackResults);
-                setArtists(artistResults);
-                setAlbums(albumResults);
-
-                // Determine top result
-                if (trackResults.length > 0) {
-                    setTopResult({ ...trackResults[0], type: 'track' });
-                } else if (artistResults.length > 0) {
-                    setTopResult({ ...artistResults[0], type: 'artist' });
-                } else {
-                    setTopResult(null);
+        if (query.trim().length > 1) {
+            setIsLoading(true);
+            searchTimeout.current = setTimeout(async () => {
+                try {
+                    const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                    if (!res.ok) throw new Error(`Search failed with status ${res.status}`);
+                    const data = await res.json();
+                    setResults(data);
+                } catch (error) {
+                    console.error("Search failed:", error);
+                } finally {
+                    setIsLoading(false);
                 }
-            } catch (error) {
-                console.error("Search failed:", error);
-            }
-        };
-
-        const debounce = setTimeout(performSearch, 300);
-        return () => clearTimeout(debounce);
-    }, [searchQuery]);
-
-    const getSourceIcon = (source) => {
-        // Helper for source icon if needed, returning null for now or implementing logic
-        return null;
-    };
-
-    const handlePlayTopResult = (e) => {
-        e.stopPropagation();
-        if (topResult) {
-            if (topResult.type === 'track') {
-                playTrack(topResult, tracks);
-            } else if (topResult.type === 'artist') {
-                navigateTo('artist', '', { artist: topResult });
-            }
+            }, 500); // 500ms debounce
+        } else {
+            setResults(null);
+            setIsLoading(false);
         }
+
+        return () => clearTimeout(searchTimeout.current);
+    }, [query]);
+
+    const handlePlay = (track) => {
+        // Convert search result format to player format if needed
+        const playerTrack = {
+            id: track.id,
+            title: track.title,
+            artist: track.artist,
+            duration: track.duration,
+            cover_medium: track.thumbnail,
+            cover_xl: track.thumbnail, // Use thumbnail for all sizes for now
+            image: track.thumbnail
+        };
+        playTrack(playerTrack);
     };
-
-    const renderTrackItem = (track, index) => (
-        <div
-            key={track.id}
-            className="group flex items-center justify-between p-2 rounded-md hover:bg-white/10 transition cursor-pointer"
-            onClick={() => playTrack(track, tracks)} // Note: playTrack needs to handle UnifiedTrack
-            onContextMenu={(e) => openMenu(e, 'track', track)}
-            draggable
-            onDragStart={(e) => startDrag('track', track, e)}
-            onDragEnd={endDrag}
-        >
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="relative w-10 h-10 shrink-0">
-                    <Image
-                        src={track.coverUrl || "/placeholder-album.jpg"}
-                        alt={track.title}
-                        fill
-                        className="rounded object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center">
-                        <Play size={16} className="text-white" fill="white" />
-                    </div>
-                    {/* Source Badge */}
-                    <div className="absolute -bottom-1 -right-1 shadow-md z-10">
-                        {getSourceIcon(track.source)}
-                    </div>
-                </div>
-                <div className="flex flex-col min-w-0">
-                    <span className={`font-medium truncate ${currentTrack?.id === track.id ? 'text-green-500' : 'text-white'}`}>
-                        {track.title}
-                    </span>
-                    <span className="text-sm text-gray-400 truncate group-hover:text-white transition">
-                        {track.artist}
-                    </span>
-                </div>
-            </div>
-            <div className="flex items-center gap-4">
-                <Heart size={16} className="text-gray-400 hover:text-green-500 opacity-0 group-hover:opacity-100 transition" />
-                <span className="text-sm text-gray-400 font-mono">
-                    {Math.floor(track.duration / 60)}:{String(track.duration % 60).padStart(2, '0')}
-                </span>
-            </div>
-        </div>
-    );
-
-    const filters = [
-        { id: 'all', label: t.search?.all || 'All' },
-        { id: 'track', label: t.search?.songs || 'Songs' },
-        { id: 'artist', label: t.search?.artists || 'Artists' },
-        { id: 'album', label: t.search?.albums || 'Albums' }
-    ];
 
     return (
-        <div className="h-full flex flex-col">
-            {/* Filter Chips */}
-            <div className="px-6 py-4 flex gap-2 sticky top-0 z-20 bg-[#121212]/90 backdrop-blur-md">
-                {filters.map(f => (
-                    <button
-                        key={f.id}
-                        onClick={() => setFilter(f.id)}
-                        className={`px-4 py-1 rounded-full text-sm font-medium transition ${filter === f.id ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'}`}
-                    >
-                        {f.label}
-                    </button>
-                ))}
-            </div>
+        <div className="min-h-screen w-full bg-[#0a0a0a] text-white p-6 pb-32 overflow-y-auto custom-scrollbar">
 
-            {/* Content Area */}
-            <div className="flex-1 overflow-hidden relative">
-                {filter === 'track' ? (
-                    <VirtualizedList
-                        items={tracks}
-                        itemHeight={64}
-                        renderItem={renderTrackItem}
-                        className="px-6 pb-24"
-                        containerClassName="custom-scrollbar"
-                    />
-                ) : (
-                    <div className="h-full overflow-y-auto px-6 pb-24 space-y-8 custom-scrollbar">
-                        {/* Top Result & Songs Section */}
-                        {(filter === 'all') && (
-                            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                                {/* Top Result */}
-                                {topResult && (
-                                    <div className="lg:col-span-2 space-y-4">
-                                        <h2 className="text-2xl font-bold text-white">En çok dinlenen sonuç</h2>
-                                        <div
-                                            onClick={() => topResult.type === 'artist' ? navigateTo('artist', '', { artist: topResult }) : playTrack(topResult, tracks)}
-                                            className="bg-[#181818] hover:bg-[#282828] p-6 rounded-lg transition group cursor-pointer relative"
-                                        >
-                                            <div className="relative w-24 h-24 mb-4">
-                                                <Image
-                                                    src={topResult.picture_medium || topResult.album?.cover_medium || "/placeholder-album.jpg"}
-                                                    alt={topResult.title || topResult.name}
-                                                    fill
-                                                    className={`object-cover shadow-lg ${topResult.type === 'artist' ? 'rounded-full' : 'rounded-md'}`}
-                                                />
-                                            </div>
-                                            <div className="text-3xl font-bold text-white mb-1">{topResult.title || topResult.name}</div>
-                                            <div className="text-sm text-gray-400 font-medium uppercase tracking-wider">
-                                                {topResult.type === 'artist' ? 'Sanatçı' : 'Şarkı'} • {topResult.type === 'track' ? (typeof topResult.artist === 'string' ? topResult.artist : topResult.artist?.name) : 'Sanatçı'}
-                                            </div>
+            {/* Hero Search Bar */}
+            <div className={`flex flex-col items-center transition-all duration-500 ${results || isFocused ? 'mt-8' : 'mt-[20vh]'}`}>
+                <motion.div
+                    layout
+                    className={`relative w-full max-w-4xl z-20 ${isFocused ? 'scale-105' : 'scale-100'}`}
+                >
+                    {/* Glow Background Blob */}
+                    <div className="absolute inset-0 bg-cyan-500/20 blur-3xl rounded-full opacity-0 transition-opacity duration-500"
+                        style={{ opacity: isFocused ? 0.4 : 0.1 }} />
 
-                                            {/* Play Button (Visible on Hover) */}
-                                            <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 shadow-xl">
-                                                <button
-                                                    onClick={handlePlayTopResult}
-                                                    className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center hover:scale-105 hover:bg-green-400 transition text-black"
-                                                >
-                                                    <Play fill="black" size={24} className="ml-1" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Songs List (Preview) */}
-                                {tracks.length > 0 && (
-                                    <div className="lg:col-span-3 space-y-4">
-                                        <h2 className="text-2xl font-bold text-white">Şarkılar</h2>
-                                        <div className="flex flex-col">
-                                            {tracks.slice(0, 4).map((track, index) => renderTrackItem(track, index))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Artists Section */}
-                        {(filter === 'all' || filter === 'artist') && artists.length > 0 && (
-                            <div className="space-y-4">
-                                <h2 className="text-2xl font-bold text-white">Sanatçılar</h2>
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                                    {artists.slice(0, filter === 'all' ? 5 : 20).map((artist) => (
-                                        <div
-                                            key={artist.id}
-                                            onClick={() => navigateTo('artist', '', { artist })}
-                                            className="bg-[#181818] hover:bg-[#282828] p-4 rounded-lg transition cursor-pointer group flex flex-col items-center text-center"
-                                        >
-                                            <div className="relative w-32 h-32 mb-4 shadow-lg rounded-full overflow-hidden">
-                                                <Image
-                                                    src={artist.picture_medium || "/placeholder-artist.jpg"}
-                                                    alt={artist.name}
-                                                    fill
-                                                    className="object-cover group-hover:scale-105 transition duration-500"
-                                                />
-                                            </div>
-                                            <div className="font-bold text-white truncate w-full">{artist.name}</div>
-                                            <div className="text-sm text-gray-400 mt-1">Sanatçı</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Albums Section */}
-                        {(filter === 'all' || filter === 'album') && albums.length > 0 && (
-                            <div className="space-y-4">
-                                <h2 className="text-2xl font-bold text-white">Albümler</h2>
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                                    {albums.slice(0, filter === 'all' ? 5 : 20).map((album) => (
-                                        <AlbumCard key={album.id} item={album} />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                    <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none z-30">
+                        <Search className={`w-6 h-6 transition-colors ${isFocused ? 'text-cyan-400' : 'text-gray-400'}`} />
                     </div>
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        onFocus={() => setIsFocused(true)}
+                        onBlur={() => setIsFocused(false)}
+                        placeholder={t.searchView?.placeholder || "What do you want to listen to?"}
+                        className="w-full bg-[#181818]/80 backdrop-blur-xl border border-white/10 rounded-full py-6 pl-16 pr-8 text-xl placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 focus:bg-[#202020] transition-all shadow-[0_0_20px_rgba(0,0,0,0.5)] focus:shadow-[0_0_40px_rgba(0,243,255,0.2)] relative z-20"
+                    />
+                    {isLoading && (
+                        <div className="absolute inset-y-0 right-6 flex items-center z-30">
+                            <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                    )}
+                </motion.div>
+
+                {/* Initial State / Empty State */}
+                {!results && !isLoading && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="mt-12 text-center text-gray-500"
+                    >
+                        <p className="text-sm">{t.searchView?.initialState || "Search for artists, songs, or podcasts"}</p>
+                    </motion.div>
                 )}
             </div>
+
+            {/* Results Area */}
+            <AnimatePresence>
+                {results && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        className="w-full max-w-7xl mx-auto mt-12 grid grid-cols-1 lg:grid-cols-12 gap-8"
+                    >
+                        {/* Left Column: Top Result */}
+                        <div className="lg:col-span-5 space-y-8">
+                            {results.topResult && (
+                                <section>
+                                    <h2 className="text-xl font-bold mb-4">{t.searchView?.topResult || "Top Result"}</h2>
+                                    <div className="group relative bg-[#181818] hover:bg-[#202020] p-6 rounded-3xl transition-all duration-300 border border-white/5 hover:border-white/10 shadow-xl hover:shadow-2xl hover:scale-[1.02] cursor-pointer"
+                                        onClick={() => handlePlay(results.topResult)}>
+                                        <div className="relative aspect-square w-32 h-32 mb-6 rounded-full overflow-hidden shadow-2xl mx-auto lg:mx-0">
+                                            <Image
+                                                src={results.topResult.thumbnail}
+                                                alt={results.topResult.title}
+                                                fill
+                                                className="object-cover"
+                                            />
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                <Play fill="white" size={32} />
+                                            </div>
+                                        </div>
+                                        <h3 className="text-2xl font-bold truncate glow-text mb-1">{results.topResult.title}</h3>
+                                        <div className="flex items-center gap-2 text-gray-400">
+                                            <span className="bg-white/10 px-2 py-0.5 rounded text-xs font-medium text-white">{t.searchView?.song || "Song"}</span>
+                                            <span className="truncate">{results.topResult.artist}</span>
+                                        </div>
+
+                                        <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                                            <button className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition">
+                                                <Play fill="black" className="text-black ml-1" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </section>
+                            )}
+
+                            {/* Artists Section */}
+                            {results.artists?.length > 0 && (
+                                <section>
+                                    <h2 className="text-xl font-bold mb-4">{t.searchView?.artists || "Artists"}</h2>
+                                    <div className="space-y-3">
+                                        {results.artists.map((artist, index) => (
+                                            <div key={`${artist.id}-${index}`} className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition cursor-pointer group">
+                                                <div className="relative w-12 h-12 rounded-full overflow-hidden">
+                                                    <Image src={artist.thumbnail} alt={artist.name} fill className="object-cover" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="font-semibold group-hover:text-cyan-400 transition-colors">{artist.name}</div>
+                                                    <div className="text-xs text-gray-400">{t.searchView?.artist || "Artist"}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
+                        </div>
+
+                        {/* Right Column: Songs List */}
+                        <div className="lg:col-span-7">
+                            <section>
+                                <h2 className="text-xl font-bold mb-4">{t.searchView?.songs || "Songs"}</h2>
+                                <div className="space-y-1">
+                                    {results.songs.map((song, index) => (
+                                        <div
+                                            key={song.id}
+                                            onClick={() => handlePlay(song)}
+                                            className="group flex items-center gap-4 p-3 rounded-xl hover:bg-white/10 transition cursor-pointer border border-transparent hover:border-white/5"
+                                        >
+                                            <div className="relative w-10 h-10 shrink-0 rounded overflow-hidden">
+                                                <Image src={song.thumbnail} alt={song.title} fill className="object-cover" />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                                    <Play size={16} fill="white" />
+                                                </div>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className={`font-medium truncate ${currentTrack?.id === song.id ? 'text-cyan-400' : 'text-white group-hover:text-cyan-400'} transition-colors`}>
+                                                    {song.title}
+                                                </div>
+                                                <div className="text-sm text-gray-400 truncate">{song.artist}</div>
+                                            </div>
+                                            <div className="text-sm text-gray-500 font-mono">
+                                                {Math.floor(song.duration / 60)}:{String(song.duration % 60).padStart(2, '0')}
+                                            </div>
+                                            <button className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white transition">
+                                                <Heart size={18} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
